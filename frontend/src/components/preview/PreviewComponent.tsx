@@ -89,24 +89,25 @@ function injectEditorRuntime(rawHtml: string): string {
   const toolbar = `
 <div id="__dsr-toolbar" style="position:fixed;display:none;flex-direction:column;gap:9px;max-width:calc(100vw - 20px);width:auto;padding:12px 16px;background:#0c0a09;color:#fff;border:1.5px solid #292524;border-radius:13px;box-shadow:0 18px 48px rgba(0,0,0,.92);z-index:2147483647;font-family:ui-sans-serif,system-ui,sans-serif;font-size:13px;user-select:none;pointer-events:auto;box-sizing:border-box">
   <div id="__dsr-tb-r1" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px">
-    <span id="__dt-tag" style="background:#292524;color:#f59e0b;font-weight:800;font-family:monospace;text-transform:uppercase;padding:6px 11px;border-radius:6px;border:1px solid #555;font-size:12px">ELEM</span>
-    <button id="__dt-parent" type="button" style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#292524;color:#f59e0b">⬆ Parent</button>
-    <button id="__dt-edit"   type="button" style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#fff">✎ Text</button>
-    <button id="__dt-layout" type="button" style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#a78bfa">⚙ Props</button>
-    <button id="__dt-save"       type="button" style="padding:7px 13px;border-radius:7px;border:1px solid #065f46;font-size:13px;font-weight:700;cursor:pointer;background:#064e3b;color:#6ee7b7">⊕ Save</button>
-    <button id="__dt-savelayout" type="button" style="padding:7px 13px;border-radius:7px;border:1px solid #065f46;font-size:13px;font-weight:700;cursor:pointer;background:#065f46;color:#a7f3d0">⊞ Layout</button>
+    <span id="__dt-tag" style="height:34px;padding:0 11px;display:inline-flex;align-items:center;background:#292524;color:#f59e0b;font-weight:800;font-family:monospace;text-transform:uppercase;border-radius:6px;border:1px solid #555;font-size:12px;box-sizing:border-box;white-space:nowrap">ELEM</span>
+    <button id="__dt-parent" type="button" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#292524;color:#f59e0b;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">⬆ Parent</button>
+    <button id="__dt-edit"   type="button" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#fff;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">✎ Text</button>
+    <button id="__dt-layout" type="button" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#a78bfa;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">⚙ Props</button>
+    <button id="__dt-save"       type="button" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #065f46;font-size:13px;font-weight:700;cursor:pointer;background:#064e3b;color:#6ee7b7;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">⊕ Save</button>
+    <button id="__dt-savelayout" type="button" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #065f46;font-size:13px;font-weight:700;cursor:pointer;background:#065f46;color:#a7f3d0;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">⊞ Layout</button>
     <span style="color:#3f3f46;margin:0 3px;font-size:18px;line-height:1;align-self:center">│</span>
-    <button id="__dt-bfront" type="button" title="Bring to Front" style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#38bdf8">⬆ Front</button>
-    <button id="__dt-fwd"    type="button" title="Bring Forward"  style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#7dd3fc">↑ Fwd</button>
-    <button id="__dt-bwd"    type="button" title="Send Backward"  style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#7dd3fc">↓ Bwd</button>
-    <button id="__dt-bback"  type="button" title="Send to Back"   style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#38bdf8">⬇ Back</button>
-    <button id="__dt-lock"   type="button" title="Lock element"   style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#d6d3d1">🔓 Lock</button>
+    <button id="__dt-bfront" type="button" title="Bring to Front" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#38bdf8;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">⬆ Front</button>
+    <button id="__dt-fwd"    type="button" title="Bring Forward"  style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#7dd3fc;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">↑ Fwd</button>
+    <button id="__dt-bwd"    type="button" title="Send Backward"  style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#7dd3fc;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">↓ Bwd</button>
+    <button id="__dt-bback"  type="button" title="Send to Back"   style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#38bdf8;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">⬇ Back</button>
+    <button id="__dt-lock"   type="button" title="Lock element"   style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#1c1917;color:#d6d3d1;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">🔓 Lock</button>
   </div>
   <div id="__dsr-tb-r2" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px">
-    <button id="__dt-selectmode" type="button" style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#292524;color:#f59e0b">☐ Select</button>
-    <button id="__dt-group"      type="button" style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#292524;color:#71717a;opacity:0.5;pointer-events:none">Group</button>
-    <button id="__dt-del"        type="button" style="padding:7px 13px;border-radius:7px;border:1px solid #7f1d1d;font-size:13px;font-weight:700;cursor:pointer;background:#450a0a;color:#fca5a5">🗑 Delete</button>
-    <button id="__dt-close"      type="button" style="padding:7px 13px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#292524;color:#a8a29e">✕ Close</button>
+    <button id="__dt-selectmode" type="button" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#292524;color:#f59e0b;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">☐ Select</button>
+    <button id="__dt-draw"       type="button" title="Freehand draw / annotate" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#292524;color:#d6d3d1;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">✏ Draw</button>
+    <button id="__dt-group"      type="button" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#292524;color:#71717a;opacity:0.5;pointer-events:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">Group</button>
+    <button id="__dt-del"        type="button" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #7f1d1d;font-size:13px;font-weight:700;cursor:pointer;background:#450a0a;color:#fca5a5;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">🗑 Delete</button>
+    <button id="__dt-close"      type="button" style="height:34px;padding:0 12px;border-radius:7px;border:1px solid #44403c;font-size:13px;font-weight:700;cursor:pointer;background:#292524;color:#a8a29e;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap">✕ Close</button>
   </div>
 </div>
 <div id="__dsr-edit-modal" style="position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:rgba(0,0,0,.65);z-index:2147483647;display:none;align-items:center;justify-content:center;font-family:ui-sans-serif,system-ui,sans-serif;box-sizing:border-box">
@@ -158,6 +159,13 @@ function injectEditorRuntime(rawHtml: string): string {
   var propsPanelOpen = false;
   var selectMode = false;
   var textEditTarget = null; // element whose text is being edited via the parent-window modal
+  // ── Draw mode state ───────────────────────────────────────────────────────
+  var drawMode = false;
+  var drawCanvas = null;
+  var drawCtx = null;
+  var drawColor = '#ef4444';
+  var drawSize = 4;
+  var drawPainting = false;
 
   // 閳光偓閳光偓 Designer UI guard 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
   function isDesignerUi(el) {
@@ -310,6 +318,7 @@ function injectEditorRuntime(rawHtml: string): string {
       canUngroup: !!(selectedEl && selectedEl.dataset && selectedEl.dataset.dsrGroup),
       groupCount: selectedEls.length,
       isLocked: !!(selectedEl && selectedEl.dataset && selectedEl.dataset.dsrLocked),
+      drawMode: !!drawMode,
     };
   }
 
@@ -401,6 +410,120 @@ function injectEditorRuntime(rawHtml: string): string {
       if (!isNaN(z)) result.push(z);
     });
     return result;
+  }
+
+  // ── DOM-order helpers (Canva-style layer management) ────────────────────────
+  function nextNonDsrSib(el) {
+    var n = el.nextElementSibling;
+    while (n && isDesignerUi(n)) n = n.nextElementSibling;
+    return n;
+  }
+  function prevNonDsrSib(el) {
+    var p = el.previousElementSibling;
+    while (p && isDesignerUi(p)) p = p.previousElementSibling;
+    return p;
+  }
+  function nonDsrSiblings(el) {
+    var arr = [];
+    if (!el || !el.parentNode) return arr;
+    Array.prototype.forEach.call(el.parentNode.children, function(c) {
+      if (!isDesignerUi(c)) arr.push(c);
+    });
+    return arr;
+  }
+  function ensurePositioned(el) {
+    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+  }
+
+  // ── Freehand Draw mode ───────────────────────────────────────────────────
+  function enterDrawMode() {
+    if (drawMode) return;
+    drawMode = true;
+    // Canvas overlay
+    drawCanvas = document.createElement('canvas');
+    drawCanvas.id = '__dsr-draw-canvas';
+    drawCanvas.width = window.innerWidth;
+    drawCanvas.height = window.innerHeight;
+    drawCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2147483646;cursor:crosshair;touch-action:none;';
+    document.body.appendChild(drawCanvas);
+    drawCtx = drawCanvas.getContext('2d');
+    drawCtx.strokeStyle = drawColor;
+    drawCtx.lineWidth = drawSize;
+    drawCtx.lineCap = 'round';
+    drawCtx.lineJoin = 'round';
+    // Mini control bar
+    var drawTb = document.createElement('div');
+    drawTb.id = '__dsr-draw-tb';
+    drawTb.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:2147483647;background:#0c0a09;border:1.5px solid #292524;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.9);font-family:ui-sans-serif,system-ui,sans-serif;';
+    drawTb.innerHTML =
+      '<span style="font-family:monospace;font-size:11px;color:#f59e0b;font-weight:800;white-space:nowrap">✏ Draw Mode</span>' +
+      '<input id="__dsr-draw-color" type="color" value="'+drawColor+'" style="width:28px;height:26px;border:none;border-radius:4px;cursor:pointer;padding:1px;flex-shrink:0">' +
+      '<select id="__dsr-draw-size" style="background:#292524;border:1px solid #44403c;color:#fff;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;height:26px">' +
+        '<option value="2">Fine</option><option value="4" selected>Normal</option><option value="8">Thick</option><option value="16">Heavy</option>' +
+      '</select>' +
+      '<button id="__dsr-draw-erase" type="button" style="height:26px;padding:0 10px;border-radius:5px;border:1px solid #44403c;background:#292524;color:#a8a29e;font-size:11px;cursor:pointer;white-space:nowrap">🧹 Clear</button>' +
+      '<button id="__dsr-draw-stamp" type="button" style="height:26px;padding:0 10px;border-radius:5px;border:none;background:#065f46;color:#6ee7b7;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">✓ Stamp</button>' +
+      '<button id="__dsr-draw-exit"  type="button" style="height:26px;padding:0 10px;border-radius:5px;border:1px solid #7f1d1d;background:#450a0a;color:#fca5a5;font-size:11px;cursor:pointer;white-space:nowrap">✕ Exit</button>';
+    document.body.appendChild(drawTb);
+    document.getElementById('__dsr-draw-color').addEventListener('input', function(e) {
+      drawColor = e.target.value;
+      if (drawCtx) { drawCtx.strokeStyle = drawColor; drawCtx.fillStyle = drawColor; }
+    });
+    document.getElementById('__dsr-draw-size').addEventListener('change', function(e) {
+      drawSize = parseInt(e.target.value, 10);
+      if (drawCtx) drawCtx.lineWidth = drawSize;
+    });
+    document.getElementById('__dsr-draw-erase').addEventListener('click', function() {
+      if (drawCtx && drawCanvas) drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    });
+    document.getElementById('__dsr-draw-stamp').addEventListener('click', function() {
+      if (!drawCanvas) return;
+      var dataUrl = drawCanvas.toDataURL('image/png');
+      var img = document.createElement('img');
+      img.src = dataUrl;
+      img.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:'+(2147483646-1)+';';
+      document.body.appendChild(img);
+      exitDrawMode();
+      postUpdate();
+    });
+    document.getElementById('__dsr-draw-exit').addEventListener('click', exitDrawMode);
+    // Mouse draw events — use capture so no other handler intercepts them
+    drawCanvas.addEventListener('mousedown', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      drawPainting = true;
+      if (drawCtx) {
+        drawCtx.strokeStyle = drawColor;
+        drawCtx.lineWidth = drawSize;
+        drawCtx.lineCap = 'round';
+        drawCtx.lineJoin = 'round';
+        drawCtx.beginPath();
+        drawCtx.moveTo(e.clientX, e.clientY);
+      }
+    }, true);
+    drawCanvas.addEventListener('mousemove', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      if (!drawPainting || !drawCtx) return;
+      drawCtx.lineTo(e.clientX, e.clientY);
+      drawCtx.stroke();
+    }, true);
+    drawCanvas.addEventListener('mouseup', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      drawPainting = false;
+    }, true);
+    drawCanvas.addEventListener('mouseleave', function() { drawPainting = false; });
+  }
+
+  function exitDrawMode() {
+    drawMode = false;
+    drawPainting = false;
+    var c = document.getElementById('__dsr-draw-canvas');
+    if (c) c.remove();
+    var t = document.getElementById('__dsr-draw-tb');
+    if (t) t.remove();
+    drawCanvas = null;
+    drawCtx = null;
+    // Reset draw button state via parent toolbar
+    window.parent.postMessage(getMobileToolbarPayload(!!selectedEl), '*');
   }
 
   function updateSelectBar() {
@@ -534,59 +657,66 @@ function injectEditorRuntime(rawHtml: string): string {
         break;
       }
       case '__dt-bfront': {
-        if (!selectedEl) break;
+        // Canva-style: move element to be last among siblings (renders on top).
+        // After reordering, clear ALL sibling z-indexes so DOM order is the
+        // sole stacking determinant — works correctly for 3+ overlapping layers.
+        if (!selectedEl || !selectedEl.parentNode) break;
         snapshotForUndo();
-        // z-index only works on positioned elements; ensure at least relative.
-        if (getComputedStyle(selectedEl).position === 'static') selectedEl.style.position = 'relative';
-        var zs1 = getSiblingZIndexes();
-        // Normalise siblings that lack an explicit z-index so the ordering is reliable.
-        if (!zs1.length) {
-          Array.prototype.forEach.call(selectedEl.parentNode ? selectedEl.parentNode.children : [], function(sib) {
-            if (sib === selectedEl || isDesignerUi(sib)) return;
-            var sc = getComputedStyle(sib);
-            if (sc.position === 'static') sib.style.position = 'relative';
-            if (sc.zIndex === 'auto' || isNaN(parseInt(sc.zIndex, 10))) sib.style.zIndex = '0';
-          });
-          zs1 = getSiblingZIndexes();
+        var sibs1f = nonDsrSiblings(selectedEl);
+        var lastSib = sibs1f.length ? sibs1f[sibs1f.length - 1] : null;
+        if (lastSib && lastSib !== selectedEl) {
+          selectedEl.parentNode.insertBefore(selectedEl, lastSib.nextSibling);
         }
-        selectedEl.style.zIndex = String((zs1.length ? Math.max.apply(null, zs1) : 0) + 1);
+        nonDsrSiblings(selectedEl).forEach(function(sib) { sib.style.zIndex = ''; });
+        selectedEl.style.zIndex = '';
         postUpdate();
         break;
       }
       case '__dt-fwd': {
-        if (!selectedEl) break;
+        // Move forward one position in DOM; clear z-indexes so DOM order wins.
+        if (!selectedEl || !selectedEl.parentNode) break;
         snapshotForUndo();
-        if (getComputedStyle(selectedEl).position === 'static') selectedEl.style.position = 'relative';
-        var cur1 = parseInt(getComputedStyle(selectedEl).zIndex, 10);
-        selectedEl.style.zIndex = String((isNaN(cur1) ? 0 : cur1) + 1);
+        var nextSib1 = nextNonDsrSib(selectedEl);
+        if (nextSib1) {
+          selectedEl.parentNode.insertBefore(selectedEl, nextSib1.nextSibling);
+        }
+        nonDsrSiblings(selectedEl).forEach(function(sib) { sib.style.zIndex = ''; });
+        selectedEl.style.zIndex = '';
         postUpdate();
         break;
       }
       case '__dt-bwd': {
-        if (!selectedEl) break;
+        // Move backward one position in DOM; clear z-indexes so DOM order wins.
+        if (!selectedEl || !selectedEl.parentNode) break;
         snapshotForUndo();
-        if (getComputedStyle(selectedEl).position === 'static') selectedEl.style.position = 'relative';
-        var cur2 = parseInt(getComputedStyle(selectedEl).zIndex, 10);
-        selectedEl.style.zIndex = String((isNaN(cur2) ? 0 : cur2) - 1);
+        var prevSib1 = prevNonDsrSib(selectedEl);
+        if (prevSib1) {
+          selectedEl.parentNode.insertBefore(selectedEl, prevSib1);
+        }
+        nonDsrSiblings(selectedEl).forEach(function(sib) { sib.style.zIndex = ''; });
+        selectedEl.style.zIndex = '';
         postUpdate();
         break;
       }
       case '__dt-bback': {
-        if (!selectedEl) break;
+        // Canva-style: move element to be first among siblings (renders at bottom).
+        // After reordering, clear ALL sibling z-indexes so DOM order is the
+        // sole stacking determinant — works correctly for 3+ overlapping layers.
+        if (!selectedEl || !selectedEl.parentNode) break;
         snapshotForUndo();
-        if (getComputedStyle(selectedEl).position === 'static') selectedEl.style.position = 'relative';
-        var zs2 = getSiblingZIndexes();
-        if (!zs2.length) {
-          Array.prototype.forEach.call(selectedEl.parentNode ? selectedEl.parentNode.children : [], function(sib) {
-            if (sib === selectedEl || isDesignerUi(sib)) return;
-            var sc = getComputedStyle(sib);
-            if (sc.position === 'static') sib.style.position = 'relative';
-            if (sc.zIndex === 'auto' || isNaN(parseInt(sc.zIndex, 10))) sib.style.zIndex = '0';
-          });
-          zs2 = getSiblingZIndexes();
+        var sibs2b = nonDsrSiblings(selectedEl);
+        var firstSib = sibs2b.length ? sibs2b[0] : null;
+        if (firstSib && firstSib !== selectedEl) {
+          selectedEl.parentNode.insertBefore(selectedEl, firstSib);
         }
-        selectedEl.style.zIndex = String((zs2.length ? Math.min.apply(null, zs2) : 0) - 1);
+        nonDsrSiblings(selectedEl).forEach(function(sib) { sib.style.zIndex = ''; });
+        selectedEl.style.zIndex = '';
         postUpdate();
+        break;
+      }
+      case '__dt-draw': {
+        if (drawMode) exitDrawMode();
+        else enterDrawMode();
         break;
       }
       case '__dt-lock': {
@@ -808,6 +938,12 @@ function injectEditorRuntime(rawHtml: string): string {
   // handlers that FP-page scripts might register with stopImmediatePropagation.
   // This guarantees toolbar buttons always work even on FP pages 2+.
   window.addEventListener('click', function(e) {
+    // In draw mode only let draw-toolbar buttons pass; block all content clicks.
+    if (drawMode) {
+      if (e.target && e.target.id && e.target.id.indexOf('__dsr-draw-') === 0) return;
+      if (e.target && e.target.closest && e.target.closest('#__dsr-draw-tb')) return;
+      e.preventDefault(); e.stopImmediatePropagation(); return;
+    }
     // Toolbar / designer-UI buttons: handle here with highest priority and stop
     // propagation so the FP page cannot interfere.
     if (isDesignerUi(e.target)) {
@@ -864,6 +1000,8 @@ function injectEditorRuntime(rawHtml: string): string {
   function setupAllDrag() { /* no-op */ }
 
   window.addEventListener('mousedown', function(e) {
+    // ── Draw mode active: let the canvas handle everything, block all drag/resize ──
+    if (drawMode) { e.stopImmediatePropagation(); return; }
     // 閳光偓閳光偓 Resize handle? 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
     var rh = (e.target && e.target.dataset && e.target.dataset.rh) ? e.target
            : (e.target && e.target.closest ? e.target.closest('[data-rh]') : null);
@@ -1000,6 +1138,7 @@ function injectEditorRuntime(rawHtml: string): string {
   }, true);
 
   window.addEventListener('mousemove', function(e) {
+    if (drawMode) return; // canvas handles its own moves
     // 閳光偓閳光偓 Rubber band 閳光偓
     // Materialise a pending select-mode rubber-band once the drag threshold is crossed.
     if (rubberBand && !rubberBandEl) {
@@ -1219,6 +1358,7 @@ function injectEditorRuntime(rawHtml: string): string {
   }, true);
 
   window.addEventListener('mouseup', function() {
+    if (drawMode) return;
     isDragging = false;
     // 閳光偓閳光偓 Rubber band end: select intersecting elements 閳光偓
     // If the rubber-band was pending but never materialised (user just clicked,
@@ -1371,6 +1511,24 @@ function injectEditorRuntime(rawHtml: string): string {
       if (window.lucide) window.lucide.createIcons();
       selectElement(newEl);
       postUpdate();
+    }
+    if (e.data.type === 'DESIGNER_CONVERT_ELEMENT') {
+      if (!selectedEl) return;
+      var newTag = (e.data.tag || 'div').toLowerCase();
+      var allowed = ['div','section','article','main','aside','header','footer','nav','button','a','span','p','h1','h2','h3','h4','h5','h6','li','ul','ol','form','label','input','textarea'];
+      if (allowed.indexOf(newTag) === -1) return;
+      snapshotForUndo();
+      var newEl2 = document.createElement(newTag);
+      // Copy attributes
+      Array.prototype.slice.call(selectedEl.attributes).forEach(function(attr) {
+        try { newEl2.setAttribute(attr.name, attr.value); } catch(err) {}
+      });
+      // Move children
+      while (selectedEl.firstChild) newEl2.appendChild(selectedEl.firstChild);
+      selectedEl.parentNode.replaceChild(newEl2, selectedEl);
+      selectElement(newEl2);
+      postUpdate();
+      return;
     }
   });
 
@@ -1577,6 +1735,7 @@ interface MobileTbState {
   canUngroup: boolean;
   groupCount: number;
   isLocked: boolean;
+  drawMode?: boolean;
 }
 
 // ─── Properties panel data type ──────────────────────────────────────────────
@@ -1854,12 +2013,56 @@ function PropertiesPanel({
           Use Font Size to independently adjust text size for the selected element.
         </div>
         {field('Font Size (px)', inp(d.fontSize ?? 14, v => setD(p => ({ ...p, fontSize: parseFloat(v) || 14 }))))}
+        <div style={{ marginBottom: 14 }} />
+        {/* Convert Element */}
+        <ConvertElementSection tagName={d.tagName} iframeRef={iframeRef} />
       </div>
       {/* Footer actions */}
       <div style={{ padding: '10px 14px', borderTop: '1px solid #27272a', display: 'flex', gap: 8, background: '#09090b', position: 'sticky', bottom: 0 }}>
         <button onClick={dup} style={{ flex: 1, padding: '7px 0', borderRadius: 6, border: '1px solid #3f3f46', background: '#27272a', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Duplicate</button>
         <button onClick={apply} style={{ flex: 2, padding: '7px 0', borderRadius: 6, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>Apply</button>
       </div>
+    </div>
+  );
+}
+
+// ─── Convert Element sub-component ───────────────────────────────────────────
+const CONVERT_TAGS = ['div','section','article','main','aside','header','footer','nav','button','a','span','p','h1','h2','h3','h4','h5','h6','li','ul','ol','form','label','input','textarea'];
+
+function ConvertElementSection({ tagName, iframeRef }: { tagName: string; iframeRef: React.RefObject<HTMLIFrameElement | null> }) {
+  const [selectedTag, setSelectedTag] = React.useState(tagName.toLowerCase());
+  React.useEffect(() => { setSelectedTag(tagName.toLowerCase()); }, [tagName]);
+
+  const convert = () => {
+    iframeRef.current?.contentWindow?.postMessage({ type: 'DESIGNER_CONVERT_ELEMENT', tag: selectedTag }, '*');
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Convert Element</div>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <select
+          value={selectedTag}
+          onChange={e => setSelectedTag(e.target.value)}
+          style={{ flex: 1, background: '#27272a', border: '1px solid #3f3f46', borderRadius: 5, color: '#fff', padding: '5px 8px', fontSize: 12, cursor: 'pointer' }}
+        >
+          {CONVERT_TAGS.map(t => (
+            <option key={t} value={t}>{`<${t}>`}</option>
+          ))}
+        </select>
+        <button
+          onClick={convert}
+          disabled={selectedTag === tagName.toLowerCase()}
+          style={{
+            padding: '5px 12px', borderRadius: 5, border: 'none',
+            background: selectedTag === tagName.toLowerCase() ? '#27272a' : '#7c3aed',
+            color: selectedTag === tagName.toLowerCase() ? '#52525b' : '#fff',
+            cursor: selectedTag === tagName.toLowerCase() ? 'default' : 'pointer',
+            fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' as const,
+          }}
+        >Convert</button>
+      </div>
+      <div style={{ fontSize: 10, color: '#71717a', marginTop: 5 }}>Replaces the tag while keeping all children and styles.</div>
     </div>
   );
 }
@@ -2241,6 +2444,12 @@ function PreviewComponent({
       }
     }
 
+    // Strip designer runtime attributes from stored code before rendering
+    // (they are HTML attributes and not visible text, but cleaner to remove them)
+    sourceCode = sourceCode
+      .replace(/ data-designer-runtime-injected="[^"]*"/g, '')
+      .replace(/ data-dsr-running="[^"]*"/g, '');
+
     let html = isInteractiveMode
       ? injectEditorRuntime(sourceCode)
       : isInspectMode
@@ -2385,7 +2594,7 @@ pre,code{white-space:pre-wrap!important;word-break:break-word!important}
       }
       if (event.data?.type === "DESIGNER_MOBILE_TOOLBAR") {
         if (event.data.visible) {
-          setMobileTb({ tag: event.data.tag, selectMode: event.data.selectMode, canGroup: event.data.canGroup, canUngroup: event.data.canUngroup, groupCount: event.data.groupCount, isLocked: event.data.isLocked });
+          setMobileTb({ tag: event.data.tag, selectMode: event.data.selectMode, canGroup: event.data.canGroup, canUngroup: event.data.canUngroup, groupCount: event.data.groupCount, isLocked: event.data.isLocked, drawMode: event.data.drawMode });
         } else {
           setMobileTb(null);
         }
@@ -2561,6 +2770,7 @@ pre,code{white-space:pre-wrap!important;word-break:break-word!important}
               mobileTb.canGroup ? `Group (${mobileTb.groupCount})` : mobileTb.canUngroup ? 'Ungroup' : 'Group',
               (mobileTb.canGroup || mobileTb.canUngroup) ? '#1d4ed8' : '#292524',
               (mobileTb.canGroup || mobileTb.canUngroup) ? '#bfdbfe' : '#6b7280'],
+            ['__dt-draw',      mobileTb.drawMode ? '✏ Exit Draw' : '✏ Draw',                   mobileTb.drawMode ? '#78350f' : '#292524', mobileTb.drawMode ? '#fde68a' : '#d6d3d1'],
             ['__dt-del',       '🗑 Delete',                                                    '#450a0a','#fca5a5'],
             ['__dt-close',     '✕',                                                           'transparent','#a8a29e'],
           ] as [string,string,string,string][]).map(([id, label, bg, color]) => {

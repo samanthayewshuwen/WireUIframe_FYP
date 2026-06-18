@@ -356,7 +356,7 @@ export default function HistoryPanel({ session, onLoadState, onLoadStoryboard, o
       </div>
 
       {/* History list — always single-column, one row per entry */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+      <div className="flex-1 overflow-y-scroll p-2 space-y-2">
         {loading && (
           <p className="p-4 text-center text-sm text-stone-500 font-mono">Loading…</p>
         )}

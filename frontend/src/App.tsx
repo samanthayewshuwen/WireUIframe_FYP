@@ -1776,7 +1776,7 @@ Return COMPLETE standalone HTML only.`;
 
       {/* 4. Main Sidebar */}
       <div className={`lg:fixed lg:left-16 lg:inset-y-0 lg:z-40 lg:flex lg:w-96 lg:flex-col border-r border-stone-800 bg-stone-950 select-none transition-transform duration-200 ${sidebarCollapsed ? 'lg:-translate-x-full' : ''}`}>
-        <div className="flex grow flex-col overflow-y-auto">
+        <div className="flex grow flex-col overflow-y-scroll">
 
           {/* Sidebar header */}
           <div className="px-4 py-4 border-b border-stone-800 flex items-center justify-between shrink-0">
@@ -1796,7 +1796,7 @@ Return COMPLETE standalone HTML only.`;
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+          <div className="flex-1 overflow-y-scroll px-4 py-4 space-y-5">
             {IS_RUNNING_ON_CLOUD && !settings.openAiApiKey && <OnboardingNote />}
 
             {/* Initial state: full generation settings panel */}
@@ -1854,7 +1854,7 @@ Return COMPLETE standalone HTML only.`;
                 <div className="rounded-lg border border-stone-800 bg-stone-900/30 px-3 py-2.5">
                   <p className="text-[10px] text-stone-500 font-mono leading-relaxed">
                     To switch back to UI generation mode, open{" "}
-                    <span className="text-amber-400">Settings</span> and change the Aesthetic.
+                    <span className="text-amber-400">New Project</span> and change the Generation Scope.
                   </p>
                 </div>
               </div>

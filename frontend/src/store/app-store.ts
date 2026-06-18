@@ -44,6 +44,10 @@ interface AppStore {
   savedComponents: SavedComponentEntry[];
   addSavedComponent: (component: SavedComponentEntry) => void;
   removeSavedComponent: (id: string) => void;
+
+  /** Current project title — synced from Sidebar; used for download filenames. */
+  projectTitle: string;
+  setProjectTitle: (title: string) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -86,4 +90,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) => ({ savedComponents: [component, ...state.savedComponents] })),
   removeSavedComponent: (id) =>
     set((state) => ({ savedComponents: state.savedComponents.filter((component) => component.id !== id) })),
+
+  projectTitle: "ui-export",
+  setProjectTitle: (title) => set({ projectTitle: title }),
 }));

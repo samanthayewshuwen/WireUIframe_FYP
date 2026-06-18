@@ -363,7 +363,27 @@ function persistSaved(items: SavedComponent[]) {
 
 // ─── Main component ─────────────────────────────────────────────────────────
 
-type Tab = "elements" | "blocks" | "icons" | "saved" | "templates";
+type Tab = "elements" | "blocks" | "icons" | "saved" | "templates" | "import";
+
+// ─── Imported assets persistence ────────────────────────────────────────────
+const IMPORT_STORAGE_KEY = "dsr-imported-assets";
+
+interface ImportedAsset {
+  id: string;
+  name: string;
+  type: "image" | "svg" | "html";
+  dataUrl?: string;   // for image / svg
+  html?: string;      // for html snippets
+  mimeType?: string;
+  createdAt: string;
+}
+
+function loadImported(): ImportedAsset[] {
+  try { return JSON.parse(localStorage.getItem(IMPORT_STORAGE_KEY) || "[]"); } catch { return []; }
+}
+function persistImported(items: ImportedAsset[]) {
+  try { localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(items)); } catch {}
+}
 
 export default function ElementLibrary({ onClose, onExpand, isExpanded, getCurrentCode, iframeRef }: Props) {
   const { isInteractiveMode, setInteractiveMode } = useAppStore();
@@ -375,8 +395,18 @@ export default function ElementLibrary({ onClose, onExpand, isExpanded, getCurre
   const [isSavingNew, setIsSavingNew] = useState(false);
   const [saveName, setSaveName] = useState("");
   const dragHtmlRef = useRef<string>("");
+  // Imported assets
+  const [importedAssets, setImportedAssets] = useState<ImportedAsset[]>([]);
+  const [importHtmlSnippet, setImportHtmlSnippet] = useState("");
+  const [importHtmlName, setImportHtmlName] = useState("");
+  const [importTab, setImportTab] = useState<"media" | "html">("media");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => { setSavedComponents(loadSaved()); }, []);
+  // Load persisted data on mount
+  useEffect(() => {
+    setSavedComponents(loadSaved());
+    setImportedAssets(loadImported());
+  }, []);
 
   // Listen for save-component events dispatched by the interactive editor toolbar
   useEffect(() => {
@@ -448,6 +478,77 @@ export default function ElementLibrary({ onClose, onExpand, isExpanded, getCurre
     persistSaved(next);
   }
 
+  // ── Import handlers ──────────────────────────────────────────────────────
+
+  function handleFileImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const isSvg = file.type === "image/svg+xml" || file.name.endsWith(".svg");
+        const asset: ImportedAsset = {
+          id: `imp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          name: file.name.replace(/\.[^.]+$/, ""),
+          type: isSvg ? "svg" : "image",
+          dataUrl,
+          mimeType: file.type || "image/png",
+          createdAt: new Date().toISOString(),
+        };
+        setImportedAssets(prev => {
+          const next = [asset, ...prev];
+          persistImported(next);
+          return next;
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+    // reset so same file can be re-imported
+    e.target.value = "";
+  }
+
+  function addImportedHtmlSnippet() {
+    const html = importHtmlSnippet.trim();
+    const name = importHtmlName.trim() || "Custom Component";
+    if (!html) return;
+    const asset: ImportedAsset = {
+      id: `imp_${Date.now()}`,
+      name,
+      type: "html",
+      html,
+      createdAt: new Date().toISOString(),
+    };
+    setImportedAssets(prev => {
+      const next = [asset, ...prev];
+      persistImported(next);
+      return next;
+    });
+    setImportHtmlSnippet("");
+    setImportHtmlName("");
+  }
+
+  function deleteImported(id: string) {
+    setImportedAssets(prev => {
+      const next = prev.filter(a => a.id !== id);
+      persistImported(next);
+      return next;
+    });
+  }
+
+  function insertImported(asset: ImportedAsset) {
+    let html = "";
+    if (asset.type === "image") {
+      html = `<img src="${asset.dataUrl}" alt="${asset.name}" style="max-width:100%;height:auto;display:block" />`;
+    } else if (asset.type === "svg") {
+      // Embed SVG as an img tag using data URL
+      html = `<img src="${asset.dataUrl}" alt="${asset.name}" style="width:48px;height:48px;display:inline-block" />`;
+    } else if (asset.type === "html") {
+      html = asset.html || "";
+    }
+    if (html) { insertIntoIframe(html); flashInserted(asset.id); }
+  }
+
   function saveCurrentPage() {
     if (!saveName.trim()) return;
     const html = getCurrentCode?.() ?? "";
@@ -463,12 +564,13 @@ export default function ElementLibrary({ onClose, onExpand, isExpanded, getCurre
 
   // ─── Render ─────────────────────────────────────────────────────────────
 
-  const TAB_ITEMS: { id: Tab; label: string; count?: number }[] = [
+  const TAB_ITEMS: { id: Tab; label: string }[] = [
     { id: "elements", label: "Elements" },
     { id: "blocks", label: "Blocks" },
     { id: "icons", label: "Icons" },
     { id: "templates", label: "Templates" },
     { id: "saved", label: `Saved${savedComponents.length ? ` (${savedComponents.length})` : ""}` },
+    { id: "import", label: `Import${importedAssets.length ? ` (${importedAssets.length})` : ""}` },
   ];
 
   return (
@@ -502,13 +604,13 @@ export default function ElementLibrary({ onClose, onExpand, isExpanded, getCurre
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex border-b border-stone-800 shrink-0">
+      {/* Tabs — scrollable row for 6 tabs */}
+      <div className="flex border-b border-stone-800 shrink-0 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
         {TAB_ITEMS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex-1 py-2 text-[11px] font-semibold transition-colors ${
+            className={`shrink-0 px-2.5 py-2 text-[10px] font-semibold whitespace-nowrap transition-colors ${
               tab === t.id
                 ? "border-b-2 border-amber-500 text-amber-400"
                 : "text-stone-500 hover:text-stone-200"
@@ -530,7 +632,7 @@ export default function ElementLibrary({ onClose, onExpand, isExpanded, getCurre
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-scroll">
 
         {/* ── ELEMENTS tab ── */}
         {tab === "elements" && (
@@ -813,6 +915,142 @@ export default function ElementLibrary({ onClose, onExpand, isExpanded, getCurre
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── IMPORT tab ── */}
+        {tab === "import" && (
+          <div className="px-3 pb-4">
+            {/* Sub-tabs */}
+            <div className="flex gap-1 mt-2 mb-3 rounded-lg overflow-hidden border border-stone-800 bg-stone-900">
+              <button
+                onClick={() => setImportTab("media")}
+                className={`flex-1 py-1.5 text-[10px] font-bold transition-colors ${importTab === "media" ? "bg-amber-600 text-white" : "text-stone-400 hover:text-white"}`}
+              >🖼 Images / SVG / Icons</button>
+              <button
+                onClick={() => setImportTab("html")}
+                className={`flex-1 py-1.5 text-[10px] font-bold transition-colors ${importTab === "html" ? "bg-amber-600 text-white" : "text-stone-400 hover:text-white"}`}
+              >{"</>"} HTML Snippet</button>
+            </div>
+
+            {importTab === "media" && (
+              <>
+                {/* Drop zone / file input */}
+                <div
+                  className="relative mb-3 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-700 bg-stone-900/60 py-6 cursor-pointer hover:border-amber-500/60 hover:bg-stone-800/60 transition-all"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const files = Array.from(e.dataTransfer.files);
+                    if (!files.length) return;
+                    const syntheticEvent = { target: { files, value: "" } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                    handleFileImport(syntheticEvent);
+                  }}
+                >
+                  <div className="text-3xl">📁</div>
+                  <p className="text-xs font-semibold text-stone-300">Click or drag files here</p>
+                  <p className="text-[10px] text-stone-500">PNG · JPG · GIF · WebP · SVG</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,.svg"
+                    className="hidden"
+                    onChange={handleFileImport}
+                  />
+                </div>
+
+                {/* Imported asset grid */}
+                {importedAssets.filter(a => a.type === "image" || a.type === "svg").length === 0 ? (
+                  <p className="py-4 text-center text-[10px] text-stone-500">No images imported yet.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {importedAssets.filter(a => a.type === "image" || a.type === "svg").map(asset => (
+                      <div
+                        key={asset.id}
+                        draggable
+                        onDragStart={e => {
+                          const html = asset.type === "svg"
+                            ? `<img src="${asset.dataUrl}" alt="${asset.name}" style="width:48px;height:48px;display:inline-block" />`
+                            : `<img src="${asset.dataUrl}" alt="${asset.name}" style="max-width:100%;height:auto;display:block" />`;
+                          handleDragStart(e, html);
+                        }}
+                        onDragEnd={handleDragEnd}
+                        className="group relative cursor-grab rounded-lg border border-stone-800 bg-stone-900/40 p-1.5 transition-all hover:border-amber-500/40 hover:bg-stone-800 active:cursor-grabbing"
+                      >
+                        <div className="mb-1 flex h-16 items-center justify-center overflow-hidden rounded bg-stone-800/60">
+                          <img src={asset.dataUrl} alt={asset.name} className="max-h-full max-w-full object-contain" />
+                        </div>
+                        <p className="truncate text-[9px] text-stone-400 font-medium">{asset.name}</p>
+                        <p className="text-[8px] text-stone-600 uppercase">{asset.type}</p>
+                        {/* Hover actions */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-end gap-1 pb-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-stone-900/90 to-transparent">
+                          <button
+                            onClick={() => insertImported(asset)}
+                            className={`text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${insertedId === asset.id ? "bg-emerald-600 text-white" : "bg-amber-600 text-white"}`}
+                          >{insertedId === asset.id ? "✓ Inserted" : "+ Insert"}</button>
+                          <button
+                            onClick={() => deleteImported(asset.id)}
+                            className="text-[9px] text-red-400 hover:text-red-300 font-semibold"
+                          >Delete</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {importTab === "html" && (
+              <div className="space-y-2">
+                <p className="text-[10px] text-stone-400">Paste any HTML component, icon SVG, or template snippet. It will be saved and draggable into your designs.</p>
+                <input
+                  value={importHtmlName}
+                  onChange={e => setImportHtmlName(e.target.value)}
+                  placeholder="Component name (optional)"
+                  className="w-full rounded border border-stone-700 bg-stone-900 px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:border-amber-500 focus:outline-none"
+                />
+                <textarea
+                  value={importHtmlSnippet}
+                  onChange={e => setImportHtmlSnippet(e.target.value)}
+                  placeholder={`<div class="card">...</div>`}
+                  rows={6}
+                  className="w-full rounded border border-stone-700 bg-stone-900 px-3 py-2 font-mono text-[11px] text-stone-200 placeholder-stone-600 focus:border-amber-500 focus:outline-none resize-y"
+                />
+                <button
+                  onClick={addImportedHtmlSnippet}
+                  disabled={!importHtmlSnippet.trim()}
+                  className="w-full rounded-lg border border-amber-600 bg-amber-600/10 py-2 text-xs font-bold text-amber-400 hover:bg-amber-600/20 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >+ Save Component</button>
+
+                {/* Saved HTML snippets */}
+                {importedAssets.filter(a => a.type === "html").length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-stone-500">Saved Snippets</p>
+                    {importedAssets.filter(a => a.type === "html").map(asset => (
+                      <div key={asset.id} className="rounded-lg border border-stone-800 bg-stone-900/60 p-2.5">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-[10px] font-semibold text-stone-200">{asset.name}</p>
+                          <button onClick={() => deleteImported(asset.id)} className="text-[9px] text-red-400 hover:text-red-300">Delete</button>
+                        </div>
+                        <pre className="max-h-10 overflow-hidden text-[9px] text-stone-500 whitespace-pre-wrap">
+                          {(asset.html || "").slice(0, 120)}{(asset.html || "").length > 120 ? "…" : ""}
+                        </pre>
+                        <button
+                          onClick={() => insertImported(asset)}
+                          className={`mt-2 w-full rounded border py-1 text-[9px] font-bold uppercase tracking-wide transition-colors ${
+                            insertedId === asset.id
+                              ? "border-emerald-600 bg-emerald-600 text-white"
+                              : "border-stone-700 bg-stone-800 text-stone-300 hover:bg-stone-700"
+                          }`}
+                        >{insertedId === asset.id ? "✓ Inserted" : "Insert into Canvas"}</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

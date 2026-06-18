@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { FaBook, FaCode, FaDesktop, FaDownload, FaFilePdf, FaFileImage, FaMobile, FaUndo } from "react-icons/fa";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FaBook, FaCode, FaDesktop, FaDownload, FaFilePdf, FaFileImage, FaMobile, FaUndo, FaChevronDown } from "react-icons/fa";
 import { AppState, Settings } from "../../types";
 import { useAppStore } from "../../store/app-store";
 import { useProjectStore } from "../../store/project-store";
@@ -272,10 +272,78 @@ function buildDevSpecs(html: string): string {
   }
 }
 
+// ─── Capture an HTML string to PNG (hidden off-screen iframe) ─────────────────
+async function captureHtmlAsPng(html: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1440px;height:900px;border:none;visibility:hidden;";
+    document.body.appendChild(iframe);
+    const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
+    iframe.onload = async () => {
+      try {
+        const blob = await captureIframeAsPng(iframe, 1440, 900);
+        cleanup();
+        resolve(blob);
+      } catch (err) {
+        cleanup();
+        reject(err);
+      }
+    };
+    iframe.onerror = () => { cleanup(); reject(new Error("iframe load error")); };
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (doc) { doc.open(); doc.write(html); doc.close(); }
+    else { cleanup(); reject(new Error("no iframe document")); }
+  });
+}
+
+// ─── Dropdown export button (same pattern as StoryboardView) ─────────────────
+interface ExportOption { label: string; onClick: () => void; disabled?: boolean; }
+function ExportButton({ icon, label, options, disabled }: { icon: React.ReactNode; label: string; options: ExportOption[]; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative">
+      <button
+        disabled={disabled}
+        onClick={() => setOpen(o => !o)}
+        className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold transition-all ${
+          disabled
+            ? "cursor-not-allowed border-stone-700 bg-stone-800 text-stone-500"
+            : "border-stone-600 bg-stone-800 text-stone-200 hover:bg-stone-700 hover:text-white"
+        }`}
+      >
+        {icon}
+        <span>{label}</span>
+        <FaChevronDown className={`text-[10px] transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[180px] overflow-hidden rounded-xl border border-stone-700 bg-stone-900 shadow-2xl">
+          {options.map((opt, i) => (
+            <button
+              key={i}
+              disabled={opt.disabled}
+              onClick={() => { setOpen(false); opt.onClick(); }}
+              className={`flex w-full items-center px-4 py-2.5 text-left text-xs font-medium transition-colors ${
+                opt.disabled ? "cursor-not-allowed text-stone-600" : "text-stone-200 hover:bg-stone-800 hover:text-white"
+              }`}
+            >{opt.label}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // 闁冲厜鍋撻柍鍏夊亾闁冲厜鍋?Component 闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾
 
 function PreviewPane({ doUpdate, reset: _reset, settings, iframeRef: externalIframeRef }: Props) {
-  const { appState, isInteractiveMode, setInteractiveMode } = useAppStore();
+  const { appState, isInteractiveMode, setInteractiveMode, projectTitle } = useAppStore();
   const internalIframeRef = useRef<HTMLIFrameElement | null>(null);
   const iframeRef = (externalIframeRef ?? internalIframeRef) as React.RefObject<HTMLIFrameElement>;
   const { head, commits, setHead } = useProjectStore();
@@ -328,48 +396,96 @@ function PreviewPane({ doUpdate, reset: _reset, settings, iframeRef: externalIfr
   // Measure the actual bottom of the toolbar row so InspectPanel/PropertiesPanel
   // start exactly below it — no magic number needed.
   const toolbarRowRef = useRef<HTMLDivElement | null>(null);
-  const [toolbarBottom, setToolbarBottom] = useState(156);
+  const [toolbarBottom, setToolbarBottom] = useState(160);
   useEffect(() => {
     const measure = () => {
       if (toolbarRowRef.current) {
-        setToolbarBottom(Math.round(toolbarRowRef.current.getBoundingClientRect().bottom) + 4);
+        const b = toolbarRowRef.current.getBoundingClientRect().bottom;
+        if (b > 0) setToolbarBottom(Math.round(b) + 4);
       }
     };
-    measure();
+    // Delay first measure so layout has stabilised
+    const t = setTimeout(measure, 32);
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    // Also watch the toolbar row for size changes (e.g. buttons appear/disappear)
+    const ro = new ResizeObserver(measure);
+    if (toolbarRowRef.current) ro.observe(toolbarRowRef.current);
+    return () => { clearTimeout(t); window.removeEventListener("resize", measure); ro.disconnect(); };
   }, []);
 
-  // Label changes based on aesthetic mode so exported files are named sensibly
-  const exportLabel =
-    settings.aestheticMode === "wireframe" ? "wireframe" : "ui-export";
+  // Derive a filesystem-safe title for downloads
+  const safeTitle = (projectTitle || "ui-export").replace(/[^a-z0-9\-_. ]/gi, "").trim() || "ui-export";
 
-  const handleDownloadPng = async () => {
+  // ── Download current page ────────────────────────────────────────────────
+  const handleDownloadCurrentPng = async () => {
     const iframe = iframeRef.current;
     if (!iframe || !hasPreviewCode) return;
     setExportState("png");
     try {
       const { width, height } = getIframeDocumentSize(iframe);
-      await exportAsPng(iframe, width, height, exportLabel);
-    } catch {
-      alert("PNG export failed - make sure the preview has finished loading.");
-    } finally {
-      setExportState(null);
-    }
+      await exportAsPng(iframe, width, height, safeTitle);
+    } catch { alert("PNG export failed — make sure the preview has loaded."); }
+    finally { setExportState(null); }
   };
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadCurrentPdf = async () => {
     const iframe = iframeRef.current;
     if (!iframe || !hasPreviewCode) return;
     setExportState("pdf");
     try {
       const { width, height } = getIframeDocumentSize(iframe);
-      await exportAsPdf(iframe, width, height, exportLabel);
-    } catch {
-      alert("PDF export failed - make sure the preview has finished loading.");
-    } finally {
-      setExportState(null);
-    }
+      await exportAsPdf(iframe, width, height, safeTitle);
+    } catch { alert("PDF export failed — make sure the preview has loaded."); }
+    finally { setExportState(null); }
+  };
+
+  // ── Download all FP pages ────────────────────────────────────────────────
+  const handleDownloadAllPng = async () => {
+    if (!isFPActive || fpScreens.length === 0) return;
+    setExportState("png");
+    try {
+      for (let i = 0; i < fpScreens.length; i++) {
+        const s = fpScreens[i];
+        const html = s.html || "";
+        if (!html.trim()) continue;
+        const blob = await captureHtmlAsPng(html);
+        triggerDownload(blob, `${safeTitle}-${i + 1}-${(s.name || `page${i + 1}`).replace(/[^a-z0-9]/gi, "-")}.png`);
+        if (i < fpScreens.length - 1) await new Promise(r => setTimeout(r, 400));
+      }
+    } catch { alert("All-pages PNG export failed."); }
+    finally { setExportState(null); }
+  };
+
+  const handleDownloadAllPdf = async () => {
+    if (!isFPActive || fpScreens.length === 0) return;
+    setExportState("pdf");
+    try {
+      const blobs: Blob[] = [];
+      for (const s of fpScreens) {
+        if (!s.html?.trim()) continue;
+        blobs.push(await captureHtmlAsPng(s.html));
+      }
+      if (blobs.length === 0) return;
+      if (!(window as any).jspdf) {
+        await new Promise<void>((res, rej) => {
+          const sc = document.createElement("script");
+          sc.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          sc.onload = () => res(); sc.onerror = () => rej(new Error("jsPDF load failed"));
+          document.head.appendChild(sc);
+        });
+      }
+      const { jsPDF } = (window as any).jspdf;
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      for (let i = 0; i < blobs.length; i++) {
+        const dataUrl = await new Promise<string>((res, rej) => {
+          const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blobs[i]);
+        });
+        if (i > 0) pdf.addPage();
+        pdf.addImage(dataUrl, "PNG", 0, 0, 297, 210);
+      }
+      pdf.save(`${safeTitle}-all-pages.pdf`);
+    } catch { alert("All-pages PDF export failed."); }
+    finally { setExportState(null); }
   };
 
   return (
@@ -457,29 +573,31 @@ function PreviewPane({ doUpdate, reset: _reset, settings, iframeRef: externalIfr
                   <FaDownload /> Download Code
                 </Button>
 
-                {/* 闁冲厜鍋撻柍鍏夊亾 Download PNG (new) 闁冲厜鍋撻柍鍏夊亾 */}
-                <Button
-                  onClick={handleDownloadPng}
-                  variant="secondary"
+                {/* Download PNG dropdown */}
+                <ExportButton
+                  icon={<FaFileImage />}
+                  label={exportState === "png" ? "Exporting…" : "Download PNG"}
                   disabled={!hasPreviewCode || exportState !== null}
-                  className="flex items-center gap-x-2"
-                  title="Download current preview as a PNG image"
-                >
-                  <FaFileImage />
-                  {exportState === "png" ? "Exporting..." : "Download PNG"}
-                </Button>
+                  options={[
+                    { label: "📄 Current page", onClick: handleDownloadCurrentPng },
+                    ...(isFPActive && fpScreens.length > 1
+                      ? [{ label: `🗂 All pages (${fpScreens.length}) — separate`, onClick: handleDownloadAllPng }]
+                      : []),
+                  ]}
+                />
 
-                {/* 闁冲厜鍋撻柍鍏夊亾 Download PDF (new) 闁冲厜鍋撻柍鍏夊亾 */}
-                <Button
-                  onClick={handleDownloadPdf}
-                  variant="secondary"
+                {/* Download PDF dropdown */}
+                <ExportButton
+                  icon={<FaFilePdf />}
+                  label={exportState === "pdf" ? "Exporting…" : "Download PDF"}
                   disabled={!hasPreviewCode || exportState !== null}
-                  className="flex items-center gap-x-2"
-                  title="Download current preview as a PDF document"
-                >
-                  <FaFilePdf />
-                  {exportState === "pdf" ? "Exporting..." : "Download PDF"}
-                </Button>
+                  options={[
+                    { label: "📄 Current page", onClick: handleDownloadCurrentPdf },
+                    ...(isFPActive && fpScreens.length > 1
+                      ? [{ label: `🗂 All pages (${fpScreens.length}) — combined`, onClick: handleDownloadAllPdf }]
+                      : []),
+                  ]}
+                />
               </>
             )}
           </div>
@@ -540,7 +658,7 @@ function PreviewPane({ doUpdate, reset: _reset, settings, iframeRef: externalIfr
         {/* Mobile tab */}
         <TabsContent value="mobile">
           <div
-            className="flex justify-center rounded-xl border border-stone-800 bg-stone-950 p-4"
+            className="flex justify-center rounded-xl border border-stone-800 bg-stone-950 px-4 pt-4 pb-0"
             style={{ height: panelH }}
           >
             {isFPPlanning ? (

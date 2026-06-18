@@ -114,11 +114,36 @@
   }
 }
 
-/* Hide scrollbars globally while keeping scroll functionality */
+/* ── Slim visible scrollbars (dark theme) ─────────────────────────────── */
 * {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: thin;                 /* Firefox */
+  scrollbar-color: #44403c transparent;  /* Firefox: thumb track */
 }
 *::-webkit-scrollbar {
-  display: none; /* Chrome/Safari/Opera */
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: #44403c;
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #78716c;
+}
+/* Sidebar panels and library panels get a slightly more visible thumb */
+.overflow-y-auto,
+.overflow-y-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #57534e transparent;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb,
+.overflow-y-scroll::-webkit-scrollbar-thumb {
+  background: #57534e;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+.overflow-y-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a8a29e;
 }

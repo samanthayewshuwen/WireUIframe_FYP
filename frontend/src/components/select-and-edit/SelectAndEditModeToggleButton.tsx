@@ -1,21 +1,23 @@
 import { GiClick } from "react-icons/gi";
 import { useAppStore } from "../../store/app-store";
-import { Button } from "../ui/button";
 
 function SelectAndEditModeToggleButton() {
   const { inSelectAndEditMode, toggleInSelectAndEditMode } = useAppStore();
 
   return (
-    <Button
+    <button
       onClick={toggleInSelectAndEditMode}
-      className="flex items-center gap-x-2 dark:text-white dark:bg-gray-700 regenerate-btn"
-      variant={inSelectAndEditMode ? "destructive" : "default"}
+      className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all ${
+        inSelectAndEditMode
+          ? "border-red-500 bg-red-600 text-white hover:bg-red-500"
+          : "border-stone-600 bg-stone-800 text-stone-200 hover:bg-stone-700 hover:text-white"
+      }`}
     >
       <GiClick className="text-lg" />
       <span>
         {inSelectAndEditMode ? "Exit selection mode" : "Select and update"}
       </span>
-    </Button>
+    </button>
   );
 }
 

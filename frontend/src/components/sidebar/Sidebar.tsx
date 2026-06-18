@@ -24,6 +24,7 @@ interface ProjectInfoCardProps {
 
 function ProjectInfoCard({ onTitleNotesChange, externalTitle, externalNotes }: ProjectInfoCardProps) {
   const { initialPrompt, inputMode } = useProjectStore();
+  const { setProjectTitle } = useAppStore();
   const [notesValue, setNotesValue] = useState("");
   const [savedNotes, setSavedNotes] = useState("");
   const [editingNotes, setEditingNotes] = useState(false);
@@ -50,6 +51,9 @@ function ProjectInfoCard({ onTitleNotesChange, externalTitle, externalNotes }: P
     : "Untitled Project";
 
   const displayTitle = customTitle ?? derivedTitle;
+
+  // Keep app-store title in sync so PreviewPane can use it for download filenames
+  useEffect(() => { setProjectTitle(displayTitle); }, [displayTitle, setProjectTitle]);
 
   function startEditTitle() {
     setTitleDraft(displayTitle);

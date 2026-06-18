@@ -89,7 +89,7 @@ export default function FullProjectPageNav({ pages }: Props) {
       </div>
 
       {/* Page buttons */}
-      <div className="space-y-1 max-h-72 overflow-y-auto pr-0.5">
+      <div className="space-y-1 max-h-72 overflow-y-scroll pr-0.5">
         {pages.map((page, index) => {
           const isActive = activePage === page.id;
           return (

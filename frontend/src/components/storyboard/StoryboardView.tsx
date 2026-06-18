@@ -9,11 +9,13 @@ export interface Storyboard {
   scenes: Scene[];
   boardId?: string; // stable unique ID — namespaces localStorage sketch keys
   _dbId?: number;  // internal: Supabase row id for UPDATE operations (not persisted in JSON)
+  storyboard_type?: "standard" | "vr" | "ar" | "mixed";
 }
 
 interface Props {
   storyboard: Storyboard;
   onReset: () => void;
+  onRegenerate?: () => void;   // only present when a last prompt exists (fresh generation)
   anthropicApiKey?: string | null;
   onSave?: (current: Storyboard) => Promise<void>;
 }
@@ -69,7 +71,7 @@ function ExportButton({
 }
 
 // ─── StoryboardView ──────────────────────────────────────────────────────────
-export default function StoryboardView({ storyboard, onReset, anthropicApiKey, onSave }: Props) {
+export default function StoryboardView({ storyboard, onReset, onRegenerate, anthropicApiKey, onSave }: Props) {
   const [scenes, setScenes] = useState<Scene[]>(storyboard.scenes);
   const [boardTitle, setBoardTitle] = useState(storyboard.title);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -108,17 +110,32 @@ export default function StoryboardView({ storyboard, onReset, anthropicApiKey, o
   const addScene = () => {
     pushUndo(scenes);
     const newId = Math.max(0, ...scenes.map((s) => s.id)) + 1;
+    const sbType = storyboard.storyboard_type ?? "standard";
+    // Give new VR/AR scenes a sensible default viewType so metadata fields render immediately
+    const defaultViewType: Scene["viewType"] =
+      sbType === "vr" ? "player_pov"
+      : sbType === "ar" ? "ar_overlay"
+      : undefined;
     setScenes((prev) => [
       ...prev,
       {
         id: newId,
         title: `Scene ${newId}`,
         environment: "",
-        playerPosition: "",
+        playerPosition: "center",
         playerAction: "",
         elements: [],
         outcome: "",
         description: "New scene — click any field to edit.",
+        ...(defaultViewType ? {
+          viewType: defaultViewType,
+          fovZone: "primary",
+          trigger: "",
+          audioSpatial: "",
+          haptics: "",
+          transition: "",
+          branchingPaths: [],
+        } : {}),
       },
     ]);
   };
@@ -169,6 +186,7 @@ export default function StoryboardView({ storyboard, onReset, anthropicApiKey, o
     scenes,
     boardId: storyboard.boardId,
     _dbId: storyboard._dbId,
+    storyboard_type: storyboard.storyboard_type,
   });
 
   const handleSave = async () => {
@@ -368,9 +386,22 @@ export default function StoryboardView({ storyboard, onReset, anthropicApiKey, o
       {/* Board header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5 min-w-0">
-          <span className="text-[10px] font-mono text-stone-500 uppercase tracking-widest">
-            {storyboard.genre}
-          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-mono text-stone-500 uppercase tracking-widest">
+              {storyboard.genre}
+            </span>
+            {storyboard.storyboard_type && storyboard.storyboard_type !== "standard" && (
+              <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded border ${
+                storyboard.storyboard_type === "vr"
+                  ? "bg-violet-100 text-violet-700 border-violet-300"
+                  : storyboard.storyboard_type === "ar"
+                  ? "bg-amber-100 text-amber-700 border-amber-300"
+                  : "bg-sky-100 text-sky-700 border-sky-300"
+              }`}>
+                {storyboard.storyboard_type.toUpperCase()} Storyboard
+              </span>
+            )}
+          </div>
           {editingTitle ? (
             <input
               autoFocus
@@ -448,6 +479,16 @@ export default function StoryboardView({ storyboard, onReset, anthropicApiKey, o
             <span className="text-[9px] font-mono text-stone-400 animate-pulse">exporting…</span>
           )}
 
+          {onRegenerate && (
+            <button
+              onClick={onRegenerate}
+              className="text-[10px] font-mono text-emerald-600 hover:text-emerald-500 border border-emerald-400
+                hover:border-emerald-300 rounded px-2 py-1 transition-colors"
+              title="Re-run the same prompt to get a fresh storyboard"
+            >
+              ↺ regenerate
+            </button>
+          )}
           <button
             onClick={onReset}
             className="text-[10px] font-mono text-stone-400 hover:text-stone-600 border border-stone-300
@@ -483,6 +524,7 @@ export default function StoryboardView({ storyboard, onReset, anthropicApiKey, o
               onUpdate={updateScene}
               anthropicApiKey={anthropicApiKey}
               boardId={storyboard.boardId}
+              storyboardType={storyboard.storyboard_type}
             />
 
             {/* Delete button — shows confirmation inline */}
