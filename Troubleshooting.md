@@ -1,6 +1,6 @@
 ### Getting an OpenAI API key with GPT-4 model access
 
-You don't need a ChatGPT Pro account. Screenshot to code uses API keys from your OpenAI developer account. In order to get access to the GPT4 Vision model, log into your OpenAI account and then, follow these instructions:
+You don't need a ChatGPT Pro account. WireUIframe uses API keys from your OpenAI developer account. In order to get access to the GPT4 Vision model, log into your OpenAI account and then, follow these instructions:
 
 1. Open [OpenAI Dashboard](https://platform.openai.com/)
 1. Go to Settings > Billing
@@ -12,7 +12,7 @@ You don't need a ChatGPT Pro account. Screenshot to code uses API keys from your
 <img width="900" alt="285636973-da38bd4d-8a78-4904-8027-ca67d729b933" src="https://github.com/abi/screenshot-to-code/assets/23818/8d07cd84-0cf9-4f88-bc00-80eba492eadf">
 
 6. Navigate to OpenAI [api keys](https://platform.openai.com/api-keys) page and create and copy a new secret key.
-7. Go to Screenshot to code and paste it in the Settings dialog under OpenAI key (gear icon). Your key is only stored in your browser. Never stored on our servers.
+7. Go to WireUIframe and paste it in the Settings dialog under OpenAI key (gear icon). Your key is only stored in your browser. Never stored on our servers.
 
 ## Still not working?
 
