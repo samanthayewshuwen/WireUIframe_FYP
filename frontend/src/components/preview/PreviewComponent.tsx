@@ -1597,9 +1597,9 @@ interface PropsPanelData {
 }
 
 // ─── Read-only Inspect Panel ─────────────────────────────────────────────────
-function InspectPanel({ data, onClose }: { data: PropsPanelData; onClose: () => void }) {
+function InspectPanel({ data, onClose, panelTop }: { data: PropsPanelData; onClose: () => void; panelTop?: number }) {
   const panelStyle: React.CSSProperties = {
-    position: 'fixed', right: 0, top: 160, bottom: 0, width: 300,
+    position: 'fixed', right: 0, top: panelTop ?? 160, bottom: 0, width: 300,
     background: '#18181b', borderLeft: '1px solid #27272a',
     zIndex: 1000, overflowY: 'auto', display: 'flex', flexDirection: 'column',
     fontFamily: 'system-ui, sans-serif', color: '#fff',
@@ -1686,8 +1686,8 @@ function InspectPanel({ data, onClose }: { data: PropsPanelData; onClose: () => 
 
 // ─── Inline Properties Panel React component ─────────────────────────────────
 function PropertiesPanel({
-  data, iframeRef, onClose,
-}: { data: PropsPanelData; iframeRef: React.RefObject<HTMLIFrameElement | null>; onClose: () => void }) {
+  data, iframeRef, onClose, panelTop,
+}: { data: PropsPanelData; iframeRef: React.RefObject<HTMLIFrameElement | null>; onClose: () => void; panelTop?: number }) {
   const [d, setD] = React.useState<PropsPanelData>(data);
   React.useEffect(() => { setD(data); }, [data]);
 
@@ -1729,7 +1729,7 @@ function PropertiesPanel({
   );
 
   const panelStyle: React.CSSProperties = {
-    position: 'fixed', right: 0, top: 160, bottom: 0, width: 285,
+    position: 'fixed', right: 0, top: panelTop ?? 160, bottom: 0, width: 285,
     background: '#18181b', borderLeft: '1px solid #27272a',
     zIndex: 1000, overflowY: 'auto', display: 'flex', flexDirection: 'column',
     fontFamily: 'system-ui,sans-serif', fontSize: 13, color: '#fff',
@@ -2035,6 +2035,7 @@ function PreviewComponent({
   code, device, doUpdate,
   iframeRef: externalIframeRef,
   aestheticMode,
+  panelTop,
 }: Props) {
   const internalIframeRef = useRef<HTMLIFrameElement | null>(null);
   const iframeRef = (externalIframeRef || internalIframeRef) as React.RefObject<HTMLIFrameElement>;
@@ -2602,11 +2603,11 @@ pre,code{white-space:pre-wrap!important;word-break:break-word!important}
         <EditPopup event={clickEvent} iframeRef={iframeRef} doUpdate={doUpdate} scale={scale} />
       )}
       {propsData && isInteractiveMode && createPortal(
-        <PropertiesPanel data={propsData} iframeRef={iframeRef} onClose={() => setPropsData(null)} />,
+        <PropertiesPanel data={propsData} iframeRef={iframeRef} onClose={() => setPropsData(null)} panelTop={panelTop} />,
         document.body
       )}
       {propsData && isInspectMode && !isInteractiveMode && createPortal(
-        <InspectPanel data={propsData} onClose={() => { setPropsData(null); setInspectMode(false); }} />,
+        <InspectPanel data={propsData} onClose={() => { setPropsData(null); setInspectMode(false); }} panelTop={panelTop} />,
         document.body
       )}
       {/* Text Edit Modal — rendered OUTSIDE the iframe via portal so it's fully visible

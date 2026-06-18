@@ -138,6 +138,9 @@ function App() {
   // Expand panel: "history" | "library" | null
   const [expandedPanel, setExpandedPanel] = useState<"history" | "library" | null>(null);
   const [showBlankCanvasDialog, setShowBlankCanvasDialog] = useState(false);
+  // Title/notes loaded from history — used to sync the sidebar ProjectInfoCard
+  const [loadedProjectTitle, setLoadedProjectTitle] = useState<string | null>(null);
+  const [loadedProjectNotes, setLoadedProjectNotes] = useState<string | null>(null);
   // Pending save metadata (title + notes) — written by dialog, read by saveFullProjectState
   const pendingSaveMetaRef = useRef<{ title: string; notes: string } | null>(null);
 
@@ -309,6 +312,8 @@ function App() {
     setReferenceImages([]);
     setIsImportedFromCode(false);
     spDbRowIdRef.current = null;   // new project — no existing row to update
+    setLoadedProjectTitle(null);
+    setLoadedProjectNotes(null);
     useFullProjectStore.getState().reset();
     // Reset storyboard local state by remounting StoryboardGenerator
     setStoryboardResetKey((k) => k + 1);
@@ -1460,6 +1465,9 @@ Return COMPLETE standalone HTML only.`;
     // Track the loaded row so subsequent saves UPDATE this row instead of
     // inserting a new one (prevents history duplication on re-edit).
     spDbRowIdRef.current = rowId ?? null;
+    // Sync title/notes to the sidebar ProjectInfoCard
+    setLoadedProjectTitle(title ?? null);
+    setLoadedProjectNotes(notes ?? null);
     setAppState(AppState.CODE_READY);
   }
 
@@ -1859,6 +1867,8 @@ Return COMPLETE standalone HTML only.`;
                 transformWireframeToHighFi={transformWireframeToHighFi}
                 regenerate={regenerate}
                 cancelCodeGeneration={cancelCodeGeneration}
+                externalTitle={loadedProjectTitle}
+                externalNotes={loadedProjectNotes}
                 onInspect={() => {
                   const entering = !isInspectMode;
                   setInspectMode(entering);

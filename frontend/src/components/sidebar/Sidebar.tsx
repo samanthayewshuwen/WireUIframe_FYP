@@ -18,9 +18,11 @@ import { useFullProjectStore } from "../../store/full-project-store";
 // ── Project info card (shown at top of sidebar when a project is active) ─────
 interface ProjectInfoCardProps {
   onTitleNotesChange?: (title: string, notes: string) => void;
+  externalTitle?: string | null;
+  externalNotes?: string | null;
 }
 
-function ProjectInfoCard({ onTitleNotesChange }: ProjectInfoCardProps) {
+function ProjectInfoCard({ onTitleNotesChange, externalTitle, externalNotes }: ProjectInfoCardProps) {
   const { initialPrompt, inputMode } = useProjectStore();
   const [notesValue, setNotesValue] = useState("");
   const [savedNotes, setSavedNotes] = useState("");
@@ -29,6 +31,12 @@ function ProjectInfoCard({ onTitleNotesChange }: ProjectInfoCardProps) {
   const [titleDraft, setTitleDraft] = useState("");
   const [customTitle, setCustomTitle] = useState<string | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync title/notes when a project is loaded from history
+  useEffect(() => {
+    if (externalTitle != null) setCustomTitle(externalTitle);
+    if (externalNotes != null) setSavedNotes(externalNotes);
+  }, [externalTitle, externalNotes]);
 
   // Derive a display title from the prompt/mode (fallback when no custom title)
   const derivedTitle = initialPrompt?.trim()
@@ -144,6 +152,8 @@ interface SidebarProps {
   cancelCodeGeneration: () => void;
   onInspect?: () => void;
   onTitleNotesChange?: (title: string, notes: string) => void;
+  externalTitle?: string | null;
+  externalNotes?: string | null;
 }
 
 function Sidebar({
@@ -153,6 +163,8 @@ function Sidebar({
   cancelCodeGeneration,
   onInspect,
   onTitleNotesChange,
+  externalTitle,
+  externalNotes,
 }: SidebarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isErrorExpanded, setIsErrorExpanded] = useState(false);
@@ -243,7 +255,7 @@ function Sidebar({
   return (
     <>
       {/* Project info card — only shown in single-page mode; FP mode has its own card in ScreenNavigator */}
-      {!isFPActive && <ProjectInfoCard onTitleNotesChange={onTitleNotesChange} />}
+      {!isFPActive && <ProjectInfoCard onTitleNotesChange={onTitleNotesChange} externalTitle={externalTitle} externalNotes={externalNotes} />}
 
       <Variants />
 
