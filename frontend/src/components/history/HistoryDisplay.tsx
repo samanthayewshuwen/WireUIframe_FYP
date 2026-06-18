@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function HistoryDisplay({ shouldDisableReverts }: Props) {
-  const { commits, head, setHead } = useProjectStore();
+  const { commits, head, setHead, removeCommit } = useProjectStore();
 
   // Put all commits into an array and sort by created date (oldest first)
   const flatHistory = Object.values(commits).sort(
@@ -27,6 +27,16 @@ export default function HistoryDisplay({ shouldDisableReverts }: Props) {
 
   // Annotate history items with a summary, parent version, etc.
   const renderedHistory = renderHistory(flatHistory);
+
+  const handleDelete = (hash: string, index: number) => {
+    // If deleting the current head, move to the nearest other version.
+    if (hash === head) {
+      const adjacent = renderedHistory.find((_, i) => i !== index);
+      if (adjacent) setHead(adjacent.hash);
+    }
+    removeCommit(hash);
+    toast.success("Version deleted");
+  };
 
   return renderedHistory.length === 0 ? null : (
     <div className="flex flex-col h-screen">
@@ -47,13 +57,14 @@ export default function HistoryDisplay({ shouldDisableReverts }: Props) {
               >
                 <div
                   className="flex justify-between truncate flex-1 p-2"
-                  onClick={() =>
-                    shouldDisableReverts
-                      ? toast.error(
-                          "Please wait for code generation to complete before viewing an older version."
-                        )
-                      : setHead(item.hash)
-                  }
+                  onClick={() => {
+                    if (item.hash === head) return;
+                    if (shouldDisableReverts) {
+                      toast.error("Exit Interactive Edit mode first before switching versions.");
+                      return;
+                    }
+                    setHead(item.hash);
+                  }}
                 >
                   <div className="flex gap-x-1 truncate">
                     <h2 className="text-sm truncate">{item.summary}</h2>
@@ -65,6 +76,16 @@ export default function HistoryDisplay({ shouldDisableReverts }: Props) {
                   </div>
                   <h2 className="text-sm">v{index + 1}</h2>
                 </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(item.hash, index);
+                  }}
+                  className="h-5 w-5 flex-shrink-0 flex items-center justify-center rounded text-xs text-red-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/40 transition-colors"
+                  title="Delete this version"
+                >
+                  ×
+                </button>
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-6">
                     <CaretSortIcon className="h-4 w-4" />

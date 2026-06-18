@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
-import { addHighlight, getAdjustedCoordinates, removeHighlight } from "./utils";
+import { addHighlight, removeHighlight } from "./utils";
 import { useAppStore } from "../../store/app-store";
 import KeyboardShortcutBadge from "../core/KeyboardShortcutBadge";
 
@@ -12,52 +12,26 @@ interface EditPopupProps {
   scale: number;
 }
 
-const EditPopup: React.FC<EditPopupProps> = ({
-  event,
-  iframeRef,
-  doUpdate,
-  scale,
-}) => {
-  // App state
+const EditPopup: React.FC<EditPopupProps> = ({ event, iframeRef, doUpdate, scale }) => {
   const { inSelectAndEditMode } = useAppStore();
-
-  // Create a wrapper ref to store inSelectAndEditMode so the value is not stale
-  // in a event listener
   const inSelectAndEditModeRef = useRef(inSelectAndEditMode);
-
-  // Update the ref whenever the state changes
   useEffect(() => {
     inSelectAndEditModeRef.current = inSelectAndEditMode;
   }, [inSelectAndEditMode]);
 
-  // Popup state
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-
-  // Edit state
-  const [selectedElement, setSelectedElement] = useState<
-    HTMLElement | undefined
-  >(undefined);
+  const [selectedElement, setSelectedElement] = useState<HTMLElement | undefined>(undefined);
   const [updateText, setUpdateText] = useState("");
-
-  // Textarea ref for focusing
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  function onUpdate(updateText: string) {
-    // Perform the update
-    doUpdate(
-      updateText,
-      selectedElement ? removeHighlight(selectedElement) : selectedElement
-    );
-
-    // Unselect the element
+  function onUpdate(text: string) {
+    doUpdate(text, selectedElement ? removeHighlight(selectedElement) : selectedElement);
     setSelectedElement(undefined);
-
-    // Hide the popup
     setPopupVisible(false);
   }
 
-  // Remove highlight and reset state when not in select and edit mode
+  // Clear when mode turns off
   useEffect(() => {
     if (!inSelectAndEditMode) {
       if (selectedElement) removeHighlight(selectedElement);
@@ -66,63 +40,47 @@ const EditPopup: React.FC<EditPopupProps> = ({
     }
   }, [inSelectAndEditMode, selectedElement]);
 
-  // Handle the click event
+  // Handle clicks forwarded from the iframe body listener (set in PreviewComponent)
   useEffect(() => {
-    // Return if not in select and edit mode
-    if (!inSelectAndEditModeRef.current || !event) {
-      return;
-    }
+    if (!inSelectAndEditModeRef.current || !event) return;
 
-    // Prevent default to avoid issues like label clicks triggering textareas, etc.
     event.preventDefault();
+    const target = event.target as HTMLElement;
+    if (!target || target === iframeRef.current?.contentDocument?.body) return;
 
-    const targetElement = event.target as HTMLElement;
-
-    // Return if no target element
-    if (!targetElement) return;
-
-    // Highlight and set the selected element
     setSelectedElement((prev) => {
-      // Remove style from previous element
-      if (prev) {
-        removeHighlight(prev);
-      }
-      return addHighlight(targetElement);
+      if (prev) removeHighlight(prev);
+      return addHighlight(target);
     });
 
-    // Calculate adjusted coordinates
-    const adjustedCoordinates = getAdjustedCoordinates(
-      event.clientX,
-      event.clientY,
-      iframeRef.current?.getBoundingClientRect(),
-      scale
-    );
-
-    // Show the popup at the click position
+    // Position relative to innerRef (the scaled wrapper).
+    // event.clientX/Y are coords inside the iframe's viewport (unscaled).
+    // Multiplying by scale converts to the visual position inside the wrapper.
     setPopupVisible(true);
-    setPopupPosition({ x: adjustedCoordinates.x, y: adjustedCoordinates.y });
-
-    // Reset the update text
+    // Offset ~2 cm (76 px) away from the clicked element so the popup never
+    // overlaps the selected component.
+    const OFFSET = 76;
+    const scaledX = event.clientX * scale;
+    const scaledY = event.clientY * scale;
+    const maxX = BASE_W * scale - 250;
+    const maxY = BASE_H * scale - 150;
+    // Prefer right + below; flip left if near the right edge.
+    const popX = scaledX + OFFSET <= maxX ? scaledX + OFFSET : Math.max(0, scaledX - 250 - OFFSET);
+    const popY = scaledY + OFFSET <= maxY ? scaledY + OFFSET : Math.max(0, scaledY - 150 - OFFSET);
+    setPopupPosition({ x: popX, y: popY });
     setUpdateText("");
-
-    // Focus the textarea
-    textareaRef.current?.focus();
+    setTimeout(() => textareaRef.current?.focus(), 50);
   }, [event, iframeRef, scale]);
 
-  // Focus the textarea when the popup is visible (we can't do this only when handling the click event
-  // because the textarea is not rendered yet)
-  // We need to also do it in the click event because popupVisible doesn't change values in that event
   useEffect(() => {
-    if (popupVisible) {
-      textareaRef.current?.focus();
-    }
+    if (popupVisible) textareaRef.current?.focus();
   }, [popupVisible]);
 
-  if (!popupVisible) return;
+  if (!popupVisible) return null;
 
   return (
     <div
-      className="absolute bg-white dark:bg-gray-800 p-4 border border-gray-300 dark:border-gray-600 rounded shadow-lg w-60"
+      className="absolute bg-white dark:bg-gray-800 p-4 border border-gray-300 dark:border-gray-600 rounded shadow-lg w-60 z-[9999]"
       style={{ top: popupPosition.y, left: popupPosition.x }}
     >
       <Textarea
@@ -139,15 +97,16 @@ const EditPopup: React.FC<EditPopupProps> = ({
         }}
       />
       <div className="flex justify-end mt-2">
-        <Button
-          className="dark:bg-gray-700 dark:text-white"
-          onClick={() => onUpdate(updateText)}
-        >
+        <Button className="dark:bg-gray-700 dark:text-white" onClick={() => onUpdate(updateText)}>
           Update <KeyboardShortcutBadge letter="enter" />
         </Button>
       </div>
     </div>
   );
 };
+
+// Match PreviewComponent's base dimensions for clamping
+const BASE_W = 1440;
+const BASE_H = 900;
 
 export default EditPopup;

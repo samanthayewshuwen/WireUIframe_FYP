@@ -1,4 +1,4 @@
-from enum import Enum
+﻿from enum import Enum
 from typing import TypedDict
 
 
@@ -15,9 +15,11 @@ class Llm(Enum):
     CLAUDE_3_SONNET = "claude-3-sonnet-20240229"
     CLAUDE_3_OPUS = "claude-3-opus-20240229"
     CLAUDE_3_HAIKU = "claude-3-haiku-20240307"
+    CLAUDE_3_5_SONNET_20241022 = "claude-3-5-sonnet-20241022"
     CLAUDE_3_7_SONNET_2025_02_19 = "claude-3-7-sonnet-20250219"
     CLAUDE_4_SONNET_2025_05_14 = "claude-sonnet-4-20250514"
     CLAUDE_4_5_SONNET_2025_09_29 = "claude-sonnet-4-5-20250929"
+    CLAUDE_SONNET_4_6 = "claude-sonnet-4-6"
     CLAUDE_4_OPUS_2025_05_14 = "claude-opus-4-20250514"
     GEMINI_2_0_FLASH_EXP = "gemini-2.0-flash-exp"
     GEMINI_2_0_FLASH = "gemini-2.0-flash"
@@ -53,9 +55,11 @@ MODEL_PROVIDER: dict[Llm, str] = {
     Llm.CLAUDE_3_SONNET: "anthropic",
     Llm.CLAUDE_3_OPUS: "anthropic",
     Llm.CLAUDE_3_HAIKU: "anthropic",
+    Llm.CLAUDE_3_5_SONNET_20241022: "anthropic", 
     Llm.CLAUDE_3_7_SONNET_2025_02_19: "anthropic",
     Llm.CLAUDE_4_SONNET_2025_05_14: "anthropic",
     Llm.CLAUDE_4_5_SONNET_2025_09_29: "anthropic",
+    Llm.CLAUDE_SONNET_4_6: "anthropic",
     Llm.CLAUDE_4_OPUS_2025_05_14: "anthropic",
     # Gemini models
     Llm.GEMINI_2_0_FLASH_EXP: "gemini",
@@ -68,3 +72,4 @@ MODEL_PROVIDER: dict[Llm, str] = {
 OPENAI_MODELS = {m for m, p in MODEL_PROVIDER.items() if p == "openai"}
 ANTHROPIC_MODELS = {m for m, p in MODEL_PROVIDER.items() if p == "anthropic"}
 GEMINI_MODELS = {m for m, p in MODEL_PROVIDER.items() if p == "gemini"}
+

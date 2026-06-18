@@ -25,8 +25,14 @@ def convert_openai_messages_to_claude(
     # Deep copy messages to avoid modifying the original list
     cloned_messages = copy.deepcopy(messages)
 
-    system_prompt = cast(str, cloned_messages[0].get("content"))
-    claude_messages = [dict(message) for message in cloned_messages[1:]]
+    # Extract system prompt from the first message
+    system_prompt = ""
+    if cloned_messages and cloned_messages[0].get("role") == "system":
+        system_prompt = cast(str, cloned_messages[0].get("content", ""))
+        # Remove system message from the list as Claude handles it separately
+        claude_messages = [dict(message) for message in cloned_messages[1:]]
+    else:
+        claude_messages = [dict(message) for message in cloned_messages]
 
     for message in claude_messages:
         if not isinstance(message["content"], list):
@@ -65,56 +71,33 @@ async def stream_claude_response(
     start_time = time.time()
     client = AsyncAnthropic(api_key=api_key)
 
-    # Base parameters
-    max_tokens = 8192
+    # --- CRITICAL FIX FOR HAIKU MODEL ---
+    # Haiku has a limit of 4096 tokens. 
+    # If we request 8192, it will crash with Error 400.
+    max_tokens = 4096 
+    
+    # If you eventually unlock Sonnet/Opus, you can increase this, 
+    # but 4096 is safe for ALL models.
+    # ------------------------------------
+    
     temperature = 0.0
-
-    # Claude 3.7 Sonnet can support higher max tokens
-    if model_name == "claude-3-7-sonnet-20250219":
-        max_tokens = 20000
-
-    # Translate OpenAI messages to Claude messages
 
     # Convert OpenAI format messages to Claude format
     system_prompt, claude_messages = convert_openai_messages_to_claude(messages)
 
     response = ""
 
-    if (
-        model_name == Llm.CLAUDE_4_SONNET_2025_05_14.value
-        or model_name == Llm.CLAUDE_4_OPUS_2025_05_14.value
-    ):
-        print(f"Using {model_name} with thinking")
-        # Thinking is not compatible with temperature
-        async with client.messages.stream(
-            model=model_name,
-            thinking={"type": "enabled", "budget_tokens": 10000},
-            max_tokens=30000,
-            system=system_prompt,
-            messages=claude_messages,  # type: ignore
-        ) as stream:
-            async for event in stream:
-                if event.type == "content_block_delta":
-                    if event.delta.type == "thinking_delta":
-                        pass
-                        # print(event.delta.thinking, end="")
-                    elif event.delta.type == "text_delta":
-                        response += event.delta.text
-                        await callback(event.delta.text)
-
-    else:
-        # Stream Claude response
-        async with client.beta.messages.stream(
-            model=model_name,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=system_prompt,
-            messages=claude_messages,  # type: ignore
-            betas=["output-128k-2025-02-19"],
-        ) as stream:
-            async for text in stream.text_stream:
-                response += text
-                await callback(text)
+    # Stream Claude response (Standard Stable Version)
+    async with client.messages.stream(
+        model=model_name,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        system=system_prompt,
+        messages=claude_messages,  # type: ignore
+    ) as stream:
+        async for text in stream.text_stream:
+            response += text
+            await callback(text)
 
     # Close the Anthropic client
     await client.close()
@@ -129,13 +112,18 @@ async def stream_claude_response_native(
     api_key: str,
     callback: Callable[[str], Awaitable[None]],
     include_thinking: bool = False,
-    model_name: str = "claude-3-7-sonnet-20250219",
+    model_name: str = "claude-3-5-sonnet-20240620",
 ) -> Completion:
+    """
+    Used for Video generation mode.
+    """
     start_time = time.time()
     client = AsyncAnthropic(api_key=api_key)
 
-    # Base model parameters
+    # --- CRITICAL FIX FOR HAIKU ---
     max_tokens = 4096
+    # ------------------------------
+    
     temperature = 0.0
 
     # Multi-pass flow
@@ -174,7 +162,7 @@ async def stream_claude_response_native(
                 await callback(text)
 
         response = await stream.get_final_message()
-        response_text = response.content[0].text
+        response_text = response.content[0].text # type: ignore
 
         # Write each pass's code to .html file and thinking to .txt file
         if IS_DEBUG_ENABLED:
@@ -189,7 +177,7 @@ async def stream_claude_response_native(
 
         # Set up messages array for next pass
         messages += [
-            {"role": "assistant", "content": str(prefix) + response.content[0].text},
+            {"role": "assistant", "content": str(prefix) + response_text},
             {
                 "role": "user",
                 "content": "You've done a good job with a first draft. Improve this further based on the original instructions so that the app is fully functional and looks like the original video of the app we're trying to replicate.",

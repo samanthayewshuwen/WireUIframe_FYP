@@ -1,10 +1,15 @@
+from dotenv import load_dotenv
+load_dotenv()  # <--- This forces the .env file to load immediately
+
 import asyncio
+import os
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import traceback
 from typing import Callable, Awaitable
 from fastapi import APIRouter, WebSocket
 import openai
+from supabase import create_client, Client
 from codegen.utils import extract_html_content
 from config import (
     ANTHROPIC_API_KEY,
@@ -61,11 +66,77 @@ from prompts import create_prompt
 from prompts.claude_prompts import VIDEO_PROMPT
 from prompts.types import Stack, PromptContent
 
-# from utils import pprint_prompt
 from ws.constants import APP_ERROR_WEB_SOCKET_CODE  # type: ignore
 
 
+print("--------------------------------------------------")
+print("DEBUG CHECK:")
+# Force reload just to be safe
+load_dotenv()
+
+key = os.environ.get("ANTHROPIC_API_KEY")
+if key:
+    print(f"✅ Key loaded successfully! (Length: {len(key)})")
+    print(f"✅ Key starts with: {key[:10]}...")
+else:
+    print("❌ NO KEY FOUND. Please check backend/.env exists.")
+print("--------------------------------------------------")
+
 router = APIRouter()
+
+
+# --- SUPABASE SETUP START ---
+supabase_url = os.environ.get("SUPABASE_URL")
+supabase_key = os.environ.get("SUPABASE_KEY")
+supabase: Client = None
+
+if supabase_url and supabase_key:
+    try:
+        supabase = create_client(supabase_url, supabase_key)
+        print("✅ Supabase initialized in generate_code.py")
+    except Exception as e:
+        print(f"❌ Supabase init error: {e}")
+
+async def save_to_supabase(
+    prompt_msgs: List[ChatCompletionMessageParam],
+    code: str,
+    user_id: str | None = None,
+    aesthetic_mode: str = "high_fi",
+):
+    if not supabase:
+        return
+
+    try:
+        user_prompt_text = "Image/Video Upload"
+        for msg in reversed(prompt_msgs):
+            if msg.get("role") == "user":
+                content = msg.get("content")
+                if isinstance(content, str):
+                    user_prompt_text = content
+                elif isinstance(content, list):
+                    for part in content:
+                        if isinstance(part, dict) and part.get("type") == "text":
+                            user_prompt_text = part.get("text", "")
+                break
+
+        raw_title = user_prompt_text.strip()
+        title = raw_title[:80] + ("…" if len(raw_title) > 80 else "")
+
+        data = {
+            "prompt": user_prompt_text,
+            "code": code,
+            "aesthetic_mode": aesthetic_mode,
+            "title": title,
+        }
+
+        if user_id:
+            data["user_id"] = user_id
+
+        supabase.table('generations').insert(data).execute()
+        print(f"✅ Generation saved to Supabase! (mode: {aesthetic_mode}, user: {user_id})")
+    except Exception as e:
+        print(f"⚠️ Failed to save to Supabase: {e}")
+# --- SUPABASE SETUP END ---
 
 
 class VariantErrorAlreadySent(Exception):
@@ -170,6 +241,9 @@ class WebSocketCommunicator:
         variantIndex: int,
     ) -> None:
         """Send a message to the client with debug logging"""
+        # Bail out immediately if the client has already disconnected.
+        if self.is_closed:
+            return
         # Print for debugging on the backend
         if type == "error":
             print(f"Error (variant {variantIndex + 1}): {value}")
@@ -180,16 +254,24 @@ class WebSocketCommunicator:
         elif type == "variantError":
             print(f"Variant {variantIndex + 1} error: {value}")
 
-        await self.websocket.send_json(
-            {"type": type, "value": value, "variantIndex": variantIndex}
-        )
+        try:
+            await self.websocket.send_json(
+                {"type": type, "value": value, "variantIndex": variantIndex}
+            )
+        except Exception:
+            # Client disconnected (e.g. user cancelled — frontend sends close code 4333).
+            # Mark closed so all subsequent sends are skipped silently.
+            self.is_closed = True
 
     async def throw_error(self, message: str) -> None:
         """Send an error message and close the connection"""
         print(message)
         if not self.is_closed:
-            await self.websocket.send_json({"type": "error", "value": message})
-            await self.websocket.close(APP_ERROR_WEB_SOCKET_CODE)
+            try:
+                await self.websocket.send_json({"type": "error", "value": message})
+                await self.websocket.close(APP_ERROR_WEB_SOCKET_CODE)
+            except Exception:
+                pass  # Client already disconnected; nothing to close
             self.is_closed = True
 
     async def receive_params(self) -> Dict[str, str]:
@@ -217,6 +299,10 @@ class ExtractedParams:
     prompt: PromptContent
     history: List[Dict[str, Any]]
     is_imported_from_code: bool
+    # --- ADDED USER ID ---
+    user_id: str | None = None
+    aesthetic_mode: str = "high_fi"
+    variant_count: int = NUM_VARIANTS
 
 
 class ParameterExtractionStage:
@@ -228,7 +314,17 @@ class ParameterExtractionStage:
     async def extract_and_validate(self, params: Dict[str, str]) -> ExtractedParams:
         """Extract and validate all parameters from the request"""
         # Read the code config settings (stack) from the request.
-        generated_code_config = params.get("generatedCodeConfig", "")
+        #
+        # NOTE: callers have been observed sending this under a few different
+        # key names ("generatedCodeConfig", "stack", "generated_code_config").
+        # Accept all of them so a naming mismatch on one side doesn't silently
+        # reject every otherwise-valid request.
+        generated_code_config = (
+            params.get("generatedCodeConfig")
+            or params.get("stack")
+            or params.get("generated_code_config")
+            or ""
+        )
         if generated_code_config not in get_args(Stack):
             await self.throw_error(
                 f"Invalid generated code config: {generated_code_config}"
@@ -248,8 +344,10 @@ class ParameterExtractionStage:
         )
 
         # If neither is provided, we throw an error later only if Claude is used.
+        real_anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+        
         anthropic_api_key = self._get_from_settings_dialog_or_env(
-            params, "anthropicApiKey", ANTHROPIC_API_KEY
+            params, "anthropicApiKey", real_anthropic_key
         )
 
         # Base URL for OpenAI API
@@ -281,6 +379,19 @@ class ParameterExtractionStage:
         # Extract imported code flag
         is_imported_from_code = params.get("isImportedFromCode", False)
 
+        # --- EXTRACT USER ID ---
+        user_id = params.get("userId")
+
+        # Aesthetic mode sent by frontend as camelCase
+        aesthetic_mode = params.get("aestheticMode", "high_fi")
+
+        requested_variant_count_raw = params.get("variantCount", NUM_VARIANTS)
+        try:
+            requested_variant_count = int(requested_variant_count_raw)
+        except (TypeError, ValueError):
+            requested_variant_count = NUM_VARIANTS
+        requested_variant_count = max(1, min(NUM_VARIANTS, requested_variant_count))
+
         return ExtractedParams(
             stack=validated_stack,
             input_mode=validated_input_mode,
@@ -292,6 +403,9 @@ class ParameterExtractionStage:
             prompt=prompt,
             history=history,
             is_imported_from_code=is_imported_from_code,
+            user_id=user_id,
+            aesthetic_mode=aesthetic_mode,
+            variant_count=requested_variant_count,
         )
 
     def _get_from_settings_dialog_or_env(
@@ -323,13 +437,14 @@ class ModelSelectionStage:
         openai_api_key: str | None,
         anthropic_api_key: str | None,
         gemini_api_key: str | None = None,
+        num_variants: int = NUM_VARIANTS,
     ) -> List[Llm]:
         """Select appropriate models based on available API keys"""
         try:
             variant_models = self._get_variant_models(
                 generation_type,
                 input_mode,
-                NUM_VARIANTS,
+                num_variants,
                 openai_api_key,
                 anthropic_api_key,
                 gemini_api_key,
@@ -360,12 +475,12 @@ class ModelSelectionStage:
     ) -> List[Llm]:
         """Simple model cycling that scales with num_variants"""
 
-        claude_model = Llm.CLAUDE_3_7_SONNET_2025_02_19
+        # Force latest Sonnet model (claude-3-5-sonnet-20241022 was deprecated)
+        claude_model = Llm.CLAUDE_SONNET_4_6
 
-        # For text input mode, use Claude 4 Sonnet as third option
-        # For other input modes (image/video), use Gemini as third option
+        # For text input mode, use Claude 3.5 Sonnet as third option
         if input_mode == "text":
-            third_model = Llm.CLAUDE_4_SONNET_2025_05_14
+            third_model = claude_model
         else:
             # Gemini only works for create right now
             if generation_type == "create":
@@ -380,16 +495,16 @@ class ModelSelectionStage:
             and (gemini_api_key or input_mode == "text")
         ):
             models = [
-                Llm.GPT_4_1_2025_04_14,
+                Llm.GPT_4O_2024_11_20,
                 claude_model,
                 third_model,
             ]
         elif openai_api_key and anthropic_api_key:
-            models = [claude_model, Llm.GPT_4_1_2025_04_14]
+            models = [claude_model, Llm.GPT_4O_2024_11_20]
         elif anthropic_api_key:
-            models = [claude_model, Llm.CLAUDE_4_5_SONNET_2025_09_29]
+            models = [claude_model]
         elif openai_api_key:
-            models = [Llm.GPT_4_1_2025_04_14, Llm.GPT_4O_2024_11_20]
+            models = [Llm.GPT_4O_2024_11_20]
         else:
             raise Exception("No OpenAI or Anthropic key")
 
@@ -420,12 +535,15 @@ class PromptCreationStage:
                 prompt=extracted_params.prompt,
                 history=extracted_params.history,
                 is_imported_from_code=extracted_params.is_imported_from_code,
+                aesthetic_mode=extracted_params.aesthetic_mode,
             )
 
             print_prompt_summary(prompt_messages, truncate=False)
 
             return prompt_messages, image_cache
-        except Exception:
+        except Exception as e:
+            print(f"[PROMPT_CREATION_ERROR] {type(e).__name__}: {e}")
+            traceback.print_exc()
             await self.throw_error(
                 "Error assembling prompt. Contact support at support@picoapps.xyz"
             )
@@ -520,15 +638,14 @@ class PostProcessingStage:
         completions: List[str],
         prompt_messages: List[ChatCompletionMessageParam],
         websocket: WebSocket,
+        user_id: str | None,
+        aesthetic_mode: str = "high_fi",
     ) -> None:
-        """Process completions and perform cleanup"""
-        # Only process non-empty completions
         valid_completions = [comp for comp in completions if comp]
 
-        # Write the first valid completion to logs for debugging
         if valid_completions:
-            # Strip the completion of everything except the HTML content
             html_content = extract_html_content(valid_completions[0])
+            await save_to_supabase(prompt_messages, html_content, user_id, aesthetic_mode)
             write_logs(prompt_messages, html_content)
 
         # Note: WebSocket closing is handled by the caller
@@ -617,12 +734,8 @@ class ParallelGenerationStage:
                 if self.anthropic_api_key is None:
                     raise Exception("Anthropic API key is missing.")
 
-                # For creation, use Claude Sonnet 3.7
-                # For updates, we use Claude Sonnet 4.5 until we have tested Claude Sonnet 3.7
-                if params["generationType"] == "create":
-                    claude_model = Llm.CLAUDE_3_7_SONNET_2025_02_19
-                else:
-                    claude_model = Llm.CLAUDE_4_5_SONNET_2025_09_29
+                # Force latest Sonnet model (claude-3-5-sonnet-20241022 was deprecated)
+                claude_model = Llm.CLAUDE_SONNET_4_6
 
                 tasks.append(
                     stream_claude_response(
@@ -807,9 +920,17 @@ class ParameterExtractionMiddleware(Middleware):
 
         # Extract and validate
         param_extractor = ParameterExtractionStage(context.throw_error)
-        context.extracted_params = await param_extractor.extract_and_validate(
-            context.params
-        )
+        try:
+            context.extracted_params = await param_extractor.extract_and_validate(
+                context.params
+            )
+        except ValueError:
+            # extract_and_validate() already called throw_error(), which sends
+            # an "error" message to the client and closes the socket. Just end
+            # the pipeline here instead of letting the exception propagate out
+            # of the route handler (which previously surfaced as an unhandled
+            # ASGI-level crash instead of a clean websocket close).
+            return
 
         # Log what we're generating
         print(
@@ -826,9 +947,12 @@ class StatusBroadcastMiddleware(Middleware):
         self, context: PipelineContext, next_func: Callable[[], Awaitable[None]]
     ) -> None:
         # Tell frontend how many variants we're using
-        await context.send_message("variantCount", str(NUM_VARIANTS), 0)
+        assert context.extracted_params is not None
+        variant_count = context.extracted_params.variant_count
 
-        for i in range(NUM_VARIANTS):
+        await context.send_message("variantCount", str(variant_count), 0)
+
+        for i in range(variant_count):
             await context.send_message("status", "Generating code...", i)
 
         await next_func()
@@ -885,6 +1009,7 @@ class CodeGenerationMiddleware(Middleware):
                         openai_api_key=context.extracted_params.openai_api_key,
                         anthropic_api_key=context.extracted_params.anthropic_api_key,
                         gemini_api_key=GEMINI_API_KEY,
+                        num_variants=context.extracted_params.variant_count,
                     )
 
                     # Generate code for all variants
@@ -934,10 +1059,19 @@ class PostProcessingMiddleware(Middleware):
     async def process(
         self, context: PipelineContext, next_func: Callable[[], Awaitable[None]]
     ) -> None:
-        post_processor = PostProcessingStage()
-        await post_processor.process_completions(
-            context.completions, context.prompt_messages, context.websocket
-        )
+        # Full Project per-screen generation is saved as a single project row by the
+        # frontend (saveFPScreensToSupabase). Skip the per-call backend save to avoid
+        # creating N duplicate history rows (one per screen).
+        generation_scope = context.params.get("generationScope", "single_page")
+        if generation_scope != "full_project":
+            post_processor = PostProcessingStage()
+            await post_processor.process_completions(
+                context.completions,
+                context.prompt_messages,
+                context.websocket,
+                context.extracted_params.user_id,
+                context.extracted_params.aesthetic_mode,
+            )
 
         await next_func()
 
@@ -957,3 +1091,5 @@ async def stream_code(websocket: WebSocket):
 
     # Execute the pipeline
     await pipeline.execute(websocket)
+
+    

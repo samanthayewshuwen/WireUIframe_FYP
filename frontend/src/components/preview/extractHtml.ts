@@ -1,16 +1,37 @@
-// Not robust enough to support <html lang='en'> for instance
-export function extractHtml(code: string): string {
-  const lastHtmlStartIndex = code.lastIndexOf("<html>");
-  let htmlEndIndex = code.indexOf("</html>", lastHtmlStartIndex);
+﻿export function extractHtml(code: string): string {
+  const cleaned = code
+    .trim()
+    .replace(/^```(?:html|xml|text)?\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+
+  if (!cleaned) return "";
+
+  const htmlStartMatch = [...cleaned.matchAll(/<html\b[^>]*>/gi)].pop();
+  const lastHtmlStartIndex = htmlStartMatch?.index ?? -1;
 
   if (lastHtmlStartIndex !== -1) {
-    // If "</html>" is found, adjust htmlEndIndex to include the "</html>" tag
+    let htmlEndIndex = cleaned.toLowerCase().indexOf("</html>", lastHtmlStartIndex);
     if (htmlEndIndex !== -1) {
       htmlEndIndex += "</html>".length;
-      return code.slice(lastHtmlStartIndex, htmlEndIndex);
+      const beforeHtml = cleaned.slice(0, lastHtmlStartIndex);
+      const doctypeMatch = beforeHtml.match(/<!doctype html>/i);
+      const doctype = doctypeMatch ? "<!DOCTYPE html>\n" : "";
+      return doctype + cleaned.slice(lastHtmlStartIndex, htmlEndIndex);
     }
-    // If "</html>" is not found, return the rest of the string starting from the last "<html>"
-    return code.slice(lastHtmlStartIndex);
+    return cleaned.slice(lastHtmlStartIndex);
   }
-  return "";
+
+  const doctypeMatch = cleaned.match(/<!doctype html>/i);
+  if (doctypeMatch?.index !== undefined) {
+    return cleaned.slice(doctypeMatch.index);
+  }
+
+  const bodyMatch = cleaned.match(/<body\b[^>]*>[\s\S]*?<\/body>/i);
+  if (bodyMatch) return bodyMatch[0];
+
+  const fragmentStart = cleaned.search(/<(main|section|div|header|nav|article|aside|footer|form|button|h1|h2|p)\b/i);
+  if (fragmentStart !== -1) return cleaned.slice(fragmentStart);
+
+  return cleaned;
 }

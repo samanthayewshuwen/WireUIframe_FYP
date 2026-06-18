@@ -1,6 +1,6 @@
 import base64
 import time
-from typing import Awaitable, Callable, Dict, List
+from typing import Awaitable, Callable, Dict, List, Optional
 from openai.types.chat import ChatCompletionMessageParam
 from google import genai
 from google.genai import types
@@ -9,31 +9,44 @@ from llm import Completion, Llm
 
 def extract_image_from_messages(
     messages: List[ChatCompletionMessageParam],
-) -> Dict[str, str]:
+) -> Optional[Dict[str, str]]:
     """
-    Extracts image data from OpenAI-style chat completion messages.
-
-    Args:
-        messages: List of ChatCompletionMessageParam containing message content
-
-    Returns:
-        Dictionary with mime_type and data keys for the first image found
+    Extracts image data from the last user message.
+    Returns None if no image is found (text-only mode).
     """
-    for content_part in messages[-1]["content"]:  # type: ignore
-        if content_part["type"] == "image_url":  # type: ignore
-            image_url = content_part["image_url"]["url"]  # type: ignore
-            if image_url.startswith("data:"):  # type: ignore
-                # Extract base64 data and mime type for data URLs
-                mime_type = image_url.split(";")[0].split(":")[1]  # type: ignore
-                base64_data = image_url.split(",")[1]  # type: ignore
+    last_msg = messages[-1]
+    content = last_msg.get("content", "")  # type: ignore
+    if not isinstance(content, list):
+        return None
+
+    for part in content:
+        if not isinstance(part, dict):
+            continue
+        if part.get("type") == "image_url":
+            image_url = part["image_url"]["url"]  # type: ignore
+            if image_url.startswith("data:"):
+                mime_type = image_url.split(";")[0].split(":")[1]
+                base64_data = image_url.split(",")[1]
                 return {"mime_type": mime_type, "data": base64_data}
             else:
-                # Handle regular URLs - would need to download and convert to base64
-                # For now, just return the URI
-                return {"uri": image_url}  # type: ignore
+                return {"uri": image_url}
+    return None  # text-only
 
-    # No image found
-    raise ValueError("No image found in messages")
+
+def extract_text_from_messages(
+    messages: List[ChatCompletionMessageParam],
+) -> str:
+    """Extract the combined text prompt from all messages."""
+    parts: List[str] = []
+    for msg in messages:
+        content = msg.get("content", "")  # type: ignore
+        if isinstance(content, str):
+            parts.append(content)
+        elif isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict) and part.get("type") == "text":
+                    parts.append(part.get("text", ""))
+    return "\n\n".join(p for p in parts if p)
 
 
 async def stream_gemini_response(
@@ -44,14 +57,11 @@ async def stream_gemini_response(
 ) -> Completion:
     start_time = time.time()
 
-    # Get image data from messages
-    image_data = extract_image_from_messages(messages)
-
     client = genai.Client(api_key=api_key)
     full_response = ""
 
+    # Build config
     if model_name == Llm.GEMINI_2_5_FLASH_PREVIEW_05_20.value:
-        # Gemini 2.5 Flash supports thinking budgets
         config = types.GenerateContentConfig(
             temperature=0,
             max_output_tokens=20000,
@@ -60,23 +70,33 @@ async def stream_gemini_response(
             ),
         )
     else:
-        # TODO: Fix output tokens here
         config = types.GenerateContentConfig(
             temperature=0,
             max_output_tokens=8000,
         )
 
-    async for chunk in await client.aio.models.generate_content_stream(
-        model=model_name,
-        contents={
+    # Build contents — support both text-only and image+text
+    image_data = extract_image_from_messages(messages)
+    prompt_text = extract_text_from_messages(messages)
+
+    if image_data and "data" in image_data:
+        # Image + text mode
+        contents = {
             "parts": [
-                {"text": messages[0]["content"]},  # type: ignore
+                {"text": prompt_text},
                 types.Part.from_bytes(
                     data=base64.b64decode(image_data["data"]),
                     mime_type=image_data["mime_type"],
                 ),
             ]
-        },
+        }
+    else:
+        # Text-only mode (no image uploaded)
+        contents = {"parts": [{"text": prompt_text}]}
+
+    async for chunk in await client.aio.models.generate_content_stream(
+        model=model_name,
+        contents=contents,
         config=config,
     ):
         if chunk.candidates and len(chunk.candidates) > 0:
@@ -84,8 +104,7 @@ async def stream_gemini_response(
                 if not part.text:
                     continue
                 elif part.thought:
-                    print("Thought summary:")
-                    print(part.text)
+                    print("Gemini thought:", part.text[:80])
                 else:
                     full_response += part.text
                     await callback(part.text)

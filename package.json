@@ -11,5 +11,11 @@
   "workspaces": [
     "frontend",
     "backend"
-  ]
+  ],
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@supabase/supabase-js": "^2.90.1",
+    "interactjs": "^1.10.27",
+    "lucide-react": "^0.562.0"
+  }
 }

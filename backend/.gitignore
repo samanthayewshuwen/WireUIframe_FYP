@@ -158,3 +158,76 @@ evals_data
 
 # Temporary video evals (Remove before merge)
 video_evals
+
+
+# ==========================================
+
+# FYP Deployment (Frontend + Backend)
+
+# ==========================================
+
+# Environment files
+
+.env
+.env.*
+!.env.example
+
+# Node.js
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend build output
+
+dist/
+build/
+
+# Vite
+
+.vite/
+
+# IDE
+
+.vscode/
+.idea/
+
+# OS files
+
+.DS_Store
+Thumbs.db
+
+# Logs
+
+logs/
+*.log
+
+# Local databases
+
+*.sqlite
+*.sqlite3
+
+# Render/Vercel local configs
+
+.vercel/
+.render/
+
+# Python virtual environments
+
+venv/
+.venv/
+ENV/
+
+# Coverage
+
+coverage/
+
+# Temporary uploads
+
+uploads/
+temp/
+tmp/
+
+run_logs/
+backend/run_logs/

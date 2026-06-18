@@ -73,6 +73,7 @@ function CodeMirror({ code, editorTheme, onCodeChange }: Props) {
   return (
     <div
       className="overflow-x-scroll overflow-y-scroll mx-2 border-[4px] border-black rounded-[20px]"
+      style={{ height: 'calc(100vh - 200px)', minHeight: 400 }}
       ref={ref}
     />
   );

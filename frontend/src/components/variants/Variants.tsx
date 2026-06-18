@@ -1,15 +1,42 @@
 import { useProjectStore } from "../../store/project-store";
+import { useFullProjectStore } from "../../store/full-project-store";
 import Spinner from "../core/Spinner";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import FullProjectPageNav, { FullProjectPage } from "../full-project/FullProjectPageNav";
+import ScreenNavigator from "../full-project/ScreenNavigator";
 
 function Variants() {
   const { inputMode, head, commits, updateSelectedVariantIndex } =
     useProjectStore();
 
+  // ── Full Project multi-phase mode — show ScreenNavigator ─────────────────
+  const { isActive: isFPActive } = useFullProjectStore();
+
   // Get commit data safely
   const commit = head ? commits[head] : null;
   const variants = commit?.variants || [];
   const selectedVariantIndex = commit?.selectedVariantIndex || 0;
+
+  // ── Full-Project page detection ─────────────────────────────────────────
+  // If the generated HTML contains [data-page-name] sections, this is a
+  // full-project output — show a page navigator instead of variant tabs.
+  const currentCode = variants[selectedVariantIndex]?.code ?? "";
+
+  const fullProjectPages = useMemo<FullProjectPage[]>(() => {
+    if (!currentCode.trim()) return [];
+    try {
+      const doc = new DOMParser().parseFromString(currentCode, "text/html");
+      const els = Array.from(doc.querySelectorAll("[data-page-name]"));
+      return els
+        .map((el) => ({
+          id: el.id ?? "",
+          name: el.getAttribute("data-page-name") ?? el.id ?? "Page",
+        }))
+        .filter((p) => p.id.length > 0);
+    } catch {
+      return [];
+    }
+  }, [currentCode]);
 
   const handleVariantClick = (index: number) => {
     // Don't do anything if this is already the selected variant or no head
@@ -28,7 +55,7 @@ function Variants() {
         const code = event.code;
         if (code >= "Digit1" && code <= "Digit9") {
           const variantIndex = parseInt(code.replace("Digit", "")) - 1;
-          
+
           // Only switch if the variant exists and component is visible
           if (
             commit &&
@@ -47,10 +74,21 @@ function Variants() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [variants.length, commit?.isCommitted, selectedVariantIndex, head]);
 
-  // Early returns after all hooks
+  // ── Early returns after all hooks ───────────────────────────────────────
+
+  // Multi-phase Full Project: show dedicated ScreenNavigator
+  if (isFPActive) {
+    return <ScreenNavigator />;
+  }
+
   // If there is no head, don't show the variants
   if (head === null || !commit) {
     return null;
+  }
+
+  // ── Legacy single-HTML Full Project: show page navigator ────────────────
+  if (fullProjectPages.length > 0) {
+    return <FullProjectPageNav pages={fullProjectPages} />;
   }
 
   // If there is only one variant or the commit is already committed, don't show the variants

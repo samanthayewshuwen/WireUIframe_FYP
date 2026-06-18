@@ -6,6 +6,16 @@ export enum EditorTheme {
   COBALT = "cobalt",
 }
 
+// ✅ Visual style for generated output
+export enum AestheticMode {
+  WIREFRAME = "wireframe",
+  HIGH_FI = "high_fi",
+  GAMING_STORYBOARD = "gaming_storyboard",
+}
+
+// ✅ How many pages to generate — orthogonal to visual style
+export type GenerationScope = "single_page" | "full_project";
+
 export interface Settings {
   openAiApiKey: string | null;
   openAiBaseURL: string | null;
@@ -14,9 +24,10 @@ export interface Settings {
   editorTheme: EditorTheme;
   generatedCodeConfig: Stack;
   codeGenerationModel: CodeGenerationModel;
-  // Only relevant for hosted version
   isTermOfServiceAccepted: boolean;
-  anthropicApiKey: string | null; // Added property for anthropic API key
+  anthropicApiKey: string | null;
+  aestheticMode: AestheticMode;     // visual style (wireframe / high-fi / gaming)
+  generationScope: GenerationScope; // single page vs full multi-page project
 }
 
 export enum AppState {
@@ -33,7 +44,7 @@ export enum ScreenRecorderState {
 
 export interface PromptContent {
   text: string;
-  images: string[]; // Array of data URLs
+  images: string[];
 }
 
 export interface CodeGenerationParams {
@@ -42,6 +53,25 @@ export interface CodeGenerationParams {
   prompt: PromptContent;
   history?: PromptContent[];
   isImportedFromCode?: boolean;
+  variantCount?: number;
 }
 
 export type FullGenerationSettings = CodeGenerationParams & Settings;
+
+export interface DbGeneration {
+  id: string;
+  user_id: string;
+  prompt: string;
+  code: string;
+  project_state: any;
+  created_at: string;
+}
+
+// ✅ NEW: Component saved in the library
+export interface SavedComponent {
+  id: string;
+  name: string;
+  html: string;
+  tagName: string;
+  createdAt: string;
+}
