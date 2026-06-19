@@ -874,7 +874,7 @@ class ParallelGenerationStage:
                     index,
                 )
             except Exception as inner_e:
-                # If websocket is closed or other error during post-processing
+                # If websocket is closed or aother error during post-processing
                 print(f"Post-processing error for variant {index + 1}: {inner_e}")
                 # We still keep the completion in variant_completions
 
