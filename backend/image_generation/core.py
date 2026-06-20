@@ -43,7 +43,6 @@ async def generate_image_dalle(
     res = await client.images.generate(
         model="dall-e-3",
         quality="standard",
-        style="natural",
         n=1,
         size="1024x1024",
         prompt=prompt,
@@ -141,7 +140,7 @@ async def generate_images(
         if not img["src"].startswith("https://placehold.co"):
             continue
 
-        new_url = mapped_image_urls[img.get("alt")]
+        new_url = mapped_image_urls.get(img.get("alt"))
 
         if new_url:
             # Set width and height attributes
@@ -151,7 +150,7 @@ async def generate_images(
             # Replace img['src'] with the mapped image URL
             img["src"] = new_url
         else:
-            print("Image generation failed for alt text:" + img.get("alt"))
+            print(f"Image generation failed for alt text: {img.get('alt')}")
 
     # Return the modified HTML
     # (need to prettify it because BeautifulSoup messes up the formatting)
