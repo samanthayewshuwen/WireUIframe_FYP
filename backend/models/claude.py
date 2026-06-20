@@ -71,12 +71,14 @@ async def stream_claude_response(
     start_time = time.time()
     client = AsyncAnthropic(api_key=api_key)
 
-    # Claude Sonnet supports up to 8192 output tokens without needing the
-    # extended-output beta header. 4096 was too low for full HTML/Tailwind
-    # documents (sidebar + cards + chart + table) and was truncating
-    # responses before the closing </html> tag, which broke HTML extraction.
-    # NOTE: if a Haiku model is ever used here again, drop this back to 4096.
-    max_tokens = 8192
+    # claude-sonnet-4-6 supports up to 128,000 output tokens by default (no
+    # beta header needed). Both 4096 and 8192 were too low for full-page
+    # HTML/Tailwind wireframes with many repeated cards/rows — the response
+    # was getting cut off mid-document (no closing </html>), which broke
+    # HTML extraction and sent broken/blank previews to the frontend.
+    # NOTE: if a Haiku model is ever used here again, this needs to drop
+    # back down — Haiku's output cap is much lower (4096).
+    max_tokens = 16000
 
     temperature = 0.0
 
@@ -118,9 +120,10 @@ async def stream_claude_response_native(
     start_time = time.time()
     client = AsyncAnthropic(api_key=api_key)
 
-    # See stream_claude_response() above: 4096 truncated full-page output.
-    # NOTE: if a Haiku model is ever used here again, drop this back to 4096.
-    max_tokens = 8192
+    # See stream_claude_response() above: 4096/8192 both truncated full-page
+    # output. NOTE: if a Haiku model is ever used here again, drop this back
+    # down to 4096.
+    max_tokens = 16000
 
     temperature = 0.0
 
