@@ -60,7 +60,7 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   head: null,
 
   addCommit: (commit: Commit) => {
-    // Initialize variant statuses as 'generating'
+    
     const commitsWithStatus = {
       ...commit,
       variants: commit.variants.map((variant) => ({
@@ -69,7 +69,7 @@ export const useProjectStore = create<ProjectStore>((set) => ({
       })),
     };
 
-    // When adding a new commit, make sure all existing commits are marked as committed
+    
     set((state) => ({
       commits: {
         ...Object.fromEntries(

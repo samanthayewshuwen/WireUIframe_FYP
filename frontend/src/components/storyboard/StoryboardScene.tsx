@@ -280,6 +280,39 @@ function SketchCanvas({
         onTouchMove={draw}
         onTouchEnd={endDraw}
         onDragStart={(e) => e.preventDefault()}
+        onDragOver={(e) => {
+          // Accept drops from the element library
+          if (e.dataTransfer.types.includes("application/x-sb-svg")) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          const svg = e.dataTransfer.getData("application/x-sb-svg");
+          if (!svg) return;
+          const stampW = Number(e.dataTransfer.getData("application/x-sb-w") || 60);
+          const stampH = Number(e.dataTransfer.getData("application/x-sb-h") || 60);
+          const fillCanvas = e.dataTransfer.getData("application/x-sb-fill") === "1";
+          const canvas = canvasRef.current;
+          const ctx = canvas?.getContext("2d");
+          if (!canvas || !ctx) return;
+          saveSnapshot();
+          let dx: number, dy: number, dw: number, dh: number;
+          if (fillCanvas) {
+            dx = 0; dy = 0; dw = canvas.width; dh = canvas.height;
+          } else {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            dx = (e.clientX - rect.left) * scaleX - stampW / 2;
+            dy = (e.clientY - rect.top) * scaleY - stampH / 2;
+            dw = stampW; dh = stampH;
+          }
+          const img = new Image();
+          img.onload = () => { ctx.drawImage(img, dx, dy, dw, dh); saveToDisk(); };
+          img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+        }}
       />
     </div>
   );

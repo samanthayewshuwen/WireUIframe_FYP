@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import toast from "react-hot-toast";
 import StoryboardScene, { Scene } from "./StoryboardScene";
+import ElementLibrary from "./ElementLibrary";
 
 export interface Storyboard {
   title: string;
@@ -382,7 +383,11 @@ export default function StoryboardView({ storyboard, onReset, onRegenerate, anth
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full flex flex-col gap-4">
+    <div className="w-full flex gap-3 items-start">
+      {/* Element library — outside boardRef so it never appears in exports */}
+      <ElementLibrary />
+
+      <div className="flex-1 flex flex-col gap-4 min-w-0">
       {/* Board header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5 min-w-0">
@@ -574,6 +579,7 @@ export default function StoryboardView({ storyboard, onReset, onRegenerate, anth
       <p className="text-[10px] text-stone-400 font-mono text-center">
         Click any field to edit · Draw or generate AI sketches · Use Save to persist edits · Hover a scene to remove
       </p>
+      </div> {/* end flex-1 content column */}
     </div>
   );
 }

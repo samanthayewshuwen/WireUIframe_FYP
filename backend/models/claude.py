@@ -71,15 +71,13 @@ async def stream_claude_response(
     start_time = time.time()
     client = AsyncAnthropic(api_key=api_key)
 
-    # --- CRITICAL FIX FOR HAIKU MODEL ---
-    # Haiku has a limit of 4096 tokens. 
-    # If we request 8192, it will crash with Error 400.
-    max_tokens = 4096 
-    
-    # If you eventually unlock Sonnet/Opus, you can increase this, 
-    # but 4096 is safe for ALL models.
-    # ------------------------------------
-    
+    # Claude Sonnet supports up to 8192 output tokens without needing the
+    # extended-output beta header. 4096 was too low for full HTML/Tailwind
+    # documents (sidebar + cards + chart + table) and was truncating
+    # responses before the closing </html> tag, which broke HTML extraction.
+    # NOTE: if a Haiku model is ever used here again, drop this back to 4096.
+    max_tokens = 8192
+
     temperature = 0.0
 
     # Convert OpenAI format messages to Claude format
@@ -120,10 +118,10 @@ async def stream_claude_response_native(
     start_time = time.time()
     client = AsyncAnthropic(api_key=api_key)
 
-    # --- CRITICAL FIX FOR HAIKU ---
-    max_tokens = 4096
-    # ------------------------------
-    
+    # See stream_claude_response() above: 4096 truncated full-page output.
+    # NOTE: if a Haiku model is ever used here again, drop this back to 4096.
+    max_tokens = 8192
+
     temperature = 0.0
 
     # Multi-pass flow
